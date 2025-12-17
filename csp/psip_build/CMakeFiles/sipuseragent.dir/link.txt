@@ -1,0 +1,2 @@
+/usr/bin/ar qc libsipuseragent.a CMakeFiles/sipuseragent.dir/SipUserAgent/RtpDirection.cpp.o CMakeFiles/sipuseragent.dir/SipUserAgent/SipCdr.cpp.o CMakeFiles/sipuseragent.dir/SipUserAgent/SipDialog.cpp.o CMakeFiles/sipuseragent.dir/SipUserAgent/SipRegisterThread.cpp.o CMakeFiles/sipuseragent.dir/SipUserAgent/SipServerInfo.cpp.o CMakeFiles/sipuseragent.dir/SipUserAgent/SipUserAgent.cpp.o CMakeFiles/sipuseragent.dir/SipUserAgent/SipUserAgentCallBack.cpp.o
+/usr/bin/ranlib libsipuseragent.a

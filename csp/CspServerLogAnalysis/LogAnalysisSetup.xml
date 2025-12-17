@@ -1,0 +1,8 @@
+<Setup>
+  <Result>
+    <Folder>c:\temp\stat</Folder>
+  </Result>
+	<Log>
+		<Folder>c:\temp\sipserver</Folder>
+	</Log>
+</Setup>

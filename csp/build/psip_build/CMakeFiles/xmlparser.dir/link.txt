@@ -1,0 +1,2 @@
+/usr/bin/ar qc libxmlparser.a CMakeFiles/xmlparser.dir/XmlParser/XmlElement.cpp.o CMakeFiles/xmlparser.dir/XmlParser/XmlSearch.cpp.o
+/usr/bin/ranlib libxmlparser.a

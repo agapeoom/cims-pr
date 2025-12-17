@@ -1,0 +1,286 @@
+cmake_minimum_required(VERSION 2.8)
+Project("TGroup MPS Projcet Base" C CXX)
+
+set(CMAKE_CXX_STANDARD 11)
+set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11 -Wall -Wextra -Werror")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11 -Wall -fpermissive -fPIC")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++14 -Wall -fpermissive")
+#------------------------------------------------------------------
+# Global definitions and include
+# All source code should be POSIX 200112L compatible, but some other extensions might be used, so:
+add_definitions(-m64 ${CMAKE_C_FLAGS_DEBUG})
+add_definitions(-D_GNU_SOURCE -fpermissive)
+add_definitions(-D__STDC_CONSTANT_MACROS)
+add_definitions(-DUSING_POLL)
+add_definitions(-D_PALOGGER)
+ADD_COMPILE_OPTIONS( -g -Wall -std=c++11)
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH};${PROJECT_SOURCE_DIR}/cmake)
+
+#base definitions
+set(COM_LIB m z dl rt stdc++ pthread)
+set(COM_LIB_PATH /lib64)
+set(ARCH intel64 CACHE STRING "Set Arch [ia32|intel64]")
+set(GCCVER gcc4 CACHE STRING "Set gcc version [gcc3|gcc4]")
+include(ExternalProject)
+
+set(PMP_INC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+
+set(PASF     pasf)
+set(PASF_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${PASF})
+set(PASF_INC ${PASF_DIR}/include)
+set(PASF_LIB_PATH ${PASF_DIR}/lib})
+set(PASF_BIN_PATH ${TMPA_BIN_PATH})
+set(PASF_LIB ${PASF})
+
+#=================================================
+set(EXT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ext)
+set(PKG_BASE ${CMAKE_CURRENT_SOURCE_DIR}/pkg)
+set(BUILD_BASE ${CMAKE_CURRENT_SOURCE_DIR}/build)
+
+set(PDK_EXT pdk-3.2.5)
+set(PDK_DIR ${EXT_DIR}/${PDK_EXT})  
+set(PDK_PKG_DIR ${PKG_BASE}/${PDK_EXT})  
+set(PDK_INC ${PDK_DIR}/include) 
+set(PALOG_INC ${PDK_DIR}/palogging-include) 
+#set(PDK_LIB_PATH ${PDK_PKG_DIR}) 
+set(PDK_LIB_PATH ${PDK_DIR}) 
+set(PDK_LIB ${PDK_EXT} ) 
+set(PALOG_LIB palogging-pdk) 
+
+#PDK Project 
+set(HUDTMF_EXT hudtmf)
+set(HUDTMF_DIR ${EXT_DIR}/${HUDTMF_EXT})  
+set(HUDTMF_INC ${HUDTMF_DIR}) 
+set(HUDTMF_PKG_DIR ${PKG_BASE}/${HUDTMF_EXT})  
+set(HUDTMF_LIB_PATH ${HUDTMF_PKG_DIR}/lib) 
+set(HUDTMF_LIB ${HUDTMF_EXT}) 
+
+#RTP Project
+set(AMTRTP_EXT amtrtp)
+set(AMTRTP_DIR ${EXT_DIR}/${AMTRTP_EXT})  
+set(AMTRTP_INC ${AMTRTP_DIR}) 
+set(AMTRTP_PKG_DIR ${PKG_BASE}/${AMTRTP_EXT})
+set(AMTRTP_LIB_PATH ${AMTRTP_PKG_DIR}/lib) 
+set(AMTRTP_LIB ${AMTRTP_EXT}) 
+
+
+set(PMPROC pmproc)
+set(PMPROC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${PMPROC})
+set(PMPROC_INC ${PMPROC_DIR}/include)
+set(PMPROC_LIB_PATH ${PMPROC_DIR}/lib)
+set(PMPROC_BIN_PATH ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+set(PMPROC_LIB ${PMPROC})
+
+
+#----------------------------------------------------
+#opencore-amr Project
+set(AMR_EXT opencore-amr)
+set(AMR_DIR ${EXT_DIR}/${AMR_EXT})
+set(AMR_PKG_DIR ${PKG_BASE}/${AMR_EXT})
+set(AMR_INC ${AMR_PKG_DIR}/include/opencore-amrnb ${AMR_PKG_DIR}/include/opencore-amrwb)
+set(AMR_LIB_PATH ${AMR_PKG_DIR}/lib)
+set(AMR_LIB opencore-amrnb opencore-amrwb)
+
+
+ExternalProject_Add(
+   ${AMR_EXT}
+   SOURCE_DIR ${AMR_DIR}
+   PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/build/opencore-amr
+   CONFIGURE_COMMAND ./configure --prefix=${AMR_PKG_DIR} --enable-static --disable-shared
+   BUILD_IN_SOURCE 1 
+   DOWNLOAD_COMMAND ""
+   UPDATE_COMMAND ""
+   BUILD_COMMAND ""
+   INSTALL_COMMAND make install
+)
+
+#----------------------------------------------------
+#vo-amrwbenc-0.1.3 Project
+#--------------------------------------------------------
+set(AMRWB_EXT      vo-amrwbenc-0.1.3)
+set(AMRWB_DIR      ${EXT_DIR}/${AMRWB_EXT})
+set(AMRWB_PKG_DIR  ${PKG_BASE}/${AMRWB_EXT})
+set(AMRWB_INC ${AMRWB_PKG_DIR}/include/vo-amrwbenc)
+set(AMRWB_LIB_PATH ${AMRWB_PKG_DIR}/lib)
+set(AMRWB_LIB      vo-amrwbenc)
+ExternalProject_Add(
+   ${AMRWB_EXT}
+   SOURCE_DIR ${AMRWB_DIR}
+   PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/build/vo-amrwbenc-0.1.3
+   #CONFIGURE_COMMAND ./configure --prefix=${AMRWB_PKG_DIR} --enable-shared  --enable-static
+   CONFIGURE_COMMAND ./configure --prefix=${AMRWB_PKG_DIR} --enable-static --disable-shared
+   BUILD_IN_SOURCE 1 
+   DOWNLOAD_COMMAND ""
+   UPDATE_COMMAND ""
+   BUILD_COMMAND ""
+   INSTALL_COMMAND make install
+)
+
+
+#----------------------------------------------------
+# googletest Project
+#--------------------------------------------------------
+set(GTEST_EXT googletest)
+set(GTEST_DIR ${EXT_DIR}/${GTEST_EXT})
+set(GTEST_LIB_PATH ${GTEST_DIR}/lib64)
+set(GTEST_INC ${GTEST_DIR}/src/googlemock/include/gmock ${GTEST_DIR}/src/googletest/include/gtest ${GTEST_DIR}/src/googletest/include)
+set(GTEST_LIB gmock gtest)
+#subdirs(${GTEST_DIR}/googletest)
+ExternalProject_Add(
+   ${GTEST_EXT}
+   PREFIX  ${GTEST_DIR}/tmp
+   #DOWNLOAD_DIR  ${EXT_DIR}
+   GIT_REPOSITORY  https://github.com/google/googletest.git
+   GIT_TAG release-1.10.0
+   INSTALL_DIR  ${GTEST_DIR} 
+   CMAKE_ARGS "-DCMAKE_INSTALL_PREFIX=${GTEST_DIR}"
+   SOURCE_DIR ${GTEST_DIR}/src
+   BINARY_DIR ${GTEST_DIR}
+)
+
+#----------------------------------------------------
+# X264 Project
+#----------------------------------------------------
+set(X264_EXT x264)
+set(X264_DIR ${PKG_BASE}/${X264_EXT})
+set(X264_SRC ${X264_DIR}/src)
+set(X264_LIB_PATH ${X264_DIR}/lib)
+set(X264_INC ${X264_DIR}/include)
+set(X264_LIB ${X264_EXT})
+
+#ExternalProject_Add(
+#	  ${X264_EXT}
+#	  GIT_REPOSITORY https://code.videolan.org/videolan/x264.git
+#	  DOWNLOAD_DIR  ${X264_DIR}
+	  #GIT_TAG n4.3.2
+#	  INSTALL_DIR  ${X264_DIR}
+#	  SOURCE_DIR ${X264_SRC}
+#	  BINARY_DIR ${X264_DIR}
+#	  CONFIGURE_COMMAND ${X264_SRC}/configure --prefix=${X264_DIR} --disable-shared  --enable-static --disable-asm
+#   INSTALL_COMMAND make install
+#)
+
+
+
+#----------------------------------------------------
+# FFMPEG Project
+#----------------------------------------------------
+set(FFM_EXT ffmpeg)
+set(FFM_DIR ${PKG_BASE}/l_ffmpeg)
+set(FFM_SRC ${FFM_DIR}/src)
+set(FFM_LIB_PATH ${FFM_DIR}/lib)
+set(FFM_INC
+   "${FFM_DIR}/include"
+)
+set(FFM_PKG_PATH "${AMR_PKG_DIR}:${AMRWB_PKG_DIR}:${X264_DIR}")
+
+
+set(FFM_LIB avformat avfilter avcodec avutil postproc swresample swscale bz2)
+set(FFM_LIB avformat avfilter avcodec avutil postproc swresample swscale )
+
+
+ExternalProject_Add(
+	  ${FFM_EXT}
+	  GIT_REPOSITORY  https://git.ffmpeg.org/ffmpeg.git
+	  DOWNLOAD_DIR  ${FFM_DIR}
+	  GIT_TAG n4.3.2
+	  INSTALL_DIR  ${FFM_DIR}
+	  SOURCE_DIR ${FFM_DIR}/src
+	  BINARY_DIR ${FFM_DIR}
+	  CONFIGURE_COMMAND PATH=$ENV{PATH} PKG_CONFIG_PATH=${FFM_PKG_PATH} ${FFM_SRC}/configure --prefix=${FFM_DIR} --disable-shared --enable-static  --enable-version3 --enable-gpl --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libvo-amrwbenc --enable-libx264 --disable-amf --disable-audiotoolbox --disable-cuda-nvcc --disable-cuda-llvm --disable-cuvid --disable-d3d11va --disable-dxva2 --disable-ffnvcodec --disable-libdrm --disable-libmfx --disable-libnpp --disable-nvdec --disable-nvenc --disable-v4l2-m2m --disable-vaapi --disable-vdpau --disable-videotoolbox --disable-x86asm --enable-nonfree --enable-pthreads
+   INSTALL_COMMAND make install
+)
+
+message("PATH=$ENV{PATH} PKG_CONFIG_PATH=${FFM_PKG_PATH} ${FFM_SRC}/configure ${FFM_SRC}/configure --prefix=${FFM_DIR} --disable-shared --enable-static  --enable-version3 --enable-gpl --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libvo-amrwbenc --enable-libx264 --disable-amf --disable-audiotoolbox --disable-cuda-nvcc --disable-cuda-llvm --disable-cuvid --disable-d3d11va --disable-dxva2 --disable-ffnvcodec --disable-libdrm --disable-libmfx --disable-libnpp --disable-nvdec --disable-nvenc --disable-v4l2-m2m --disable-vaapi --disable-vdpau --disable-videotoolbox --disable-x86asm") 
+
+
+
+#----------------------------------------------------
+# oneTBB Project
+#--------------------------------------------------------
+set(TBB_EXT      oneTBB)
+set(TBB_PFX     ${EXT_DIR}/${TBB_EXT}_down)
+set(TBB_DIR     ${TBB_PFX}/src/${TBB_EXT})
+set(TBB_SRC_INC ${TBB_DIR}/include)
+set(TBB_BUILD_PATH ${TBB_PFX}/src/${TBB_EXT}-build)
+
+set(TBB_PKG_DIR  ${PKG_BASE}/${TBB_EXT})
+set(TBB_INC      ${TBB_PKG_DIR}/include)
+set(TBB_LIB_PATH ${TBB_PKG_DIR}/lib)
+#set(TBB_LIB  tbb tbbmalloc tbbmalloc_proxy)
+set(TBB_LIB  tbb tbbmalloc)
+
+include(ExternalProject)
+ExternalProject_Add(
+   ${TBB_EXT}
+   PREFIX ${TBB_PFX}
+   GIT_REPOSITORY https://github.com/oneapi-src/oneTBB.git
+   GIT_TAG tbb_2020
+   #BUILD_IN_SOURCE 1
+   CONFIGURE_COMMAND ""
+   #BUILD_COMMAND make -C src -j8 run_cmd=true {_tbb_components_cfg} tbb_build_dir=${_tbb_root}/src tbb_build_prefix=tbb
+   BUILD_COMMAND  
+	  make -C ${TBB_DIR} -j4 run_cmd=true tbb_build_dir=${TBB_BUILD_PATH} tbb_build_prefix=tbb
+	  #make -C ${TBB_DIR} -j4 extra_inc=big_iron.inc run_cmd=true tbb_build_dir=${TBB_BUILD_PATH} tbb_build_prefix=tbb
+   INSTALL_COMMAND 
+      sh -c "mkdir -p ${TBB_LIB_PATH} && mkdir -p ${TBB_INC} && cp ${TBB_BUILD_PATH}/tbb_release/lib*.so* ${TBB_LIB_PATH}/ && cp -R ${TBB_SRC_INC}/tbb ${TBB_INC}/"
+      #sh -c "mkdir -p ${TBB_LIB_PATH} && mkdir -p ${TBB_INC} && cp ${TBB_BUILD_PATH}/tbb_release/lib*.so* ${TBB_LIB_PATH}/ && cp ${TBB_BUILD_PATH}/tbb_release/lib*.a ${TBB_LIB_PATH}/ && cp -R ${TBB_SRC_INC}/tbb ${TBB_INC}/"
+)
+
+#========================================
+#jitter library
+set(JT_DIR ${EXT_DIR}/jitter)
+set(JT_LIB_PATH ${PKG_BASE}/jitter)
+set(JT_INC ${JT_DIR})
+set(JT_LIB jtlib)
+
+INCLUDE_DIRECTORIES(${PDK_INC} ${PALOG_INC} ${AMTRTP_INC} ${TBB_INC})
+add_subdirectory(${PDK_DIR})
+add_subdirectory(${HUDTMF_DIR})
+add_subdirectory(${AMTRTP_DIR})
+add_subdirectory(${JT_DIR})
+#add_subdirectory(${EVS_DIR})
+add_subdirectory(${PASF_DIR})
+
+
+message (${FFM_INC})
+message (${FFM_LIB_PATH})
+message (${FFM_LIB})
+
+INCLUDE_DIRECTORIES(${FFM_INC} ${X264_INC} ${PDK_INC} ${AMTRTP_INC} ${HUDTMF_INC} ${AMR_INC} ${AMRWB_INC} ${TBB_INC} ${JT_INC} ${PASF_INC} ${PMP_INC} ) 
+
+LINK_DIRECTORIES(${FFM_LIB_PATH} ${X264_LIB_PATH} ${GTEST_LIB_PATH} ${AMTRTP_LIB_PATH} ${PDK_LIB_PATH} ${AMR_LIB_PATH} ${AMRWB_LIB_PATH} ${HUDTMF_PATH} ${TBB_LIB_PATH} ${JT_LIB_PATH}  ${PASF_LIB_PATH} )
+#LINK_LIBRARIES( ${X264_LIB} ${AMTRTP_LIB} ${GTEST_LIB} ${PDK_LIB} ${PALOG_LIB} ${AMR_LIB} ${AMRWB_LIB} ${TBB_LIB} ${HUDTMF_LIB} ${JT_LIB} ${PASF_LIB} ${PMPROC_LIB} ${FFM_LIB} pthread rt m) 
+LINK_LIBRARIES( ${X264_LIB} ${AMTRTP_LIB} ${GTEST_LIB} ${PDK_LIB} ${PALOG_LIB} ${AMR_LIB} ${AMRWB_LIB} ${TBB_LIB} ${HUDTMF_LIB} ${JT_LIB} ${PASF_LIB} ${PMPROC_LIB} pthread rt m) 
+
+
+message("LINK_DIRECTORIES(${FFM_LIB_PATH} ${X264_LIB_PATH} ${GTEST_LIB_PATH} ${AMTRTP_LIB_PATH} ${PDK_LIB_PATH} ${AMR_LIB_PATH} ${AMRWB_LIB_PATH} ${HUDTMF_PATH} ${TBB_LIB_PATH} ${JT_LIB_PATH}  ${PASF_LIB_PATH} )")
+
+message("LINK_LIBRARIES( ${X264_LIB} ${AMTRTP_LIB} ${GTEST_LIB} ${PDK_LIB} ${PALOG_LIB} ${AMR_LIB} ${AMRWB_LIB} ${TBB_LIB} ${HUDTMF_LIB} ${JT_LIB} ${PASF_LIB} ${PMPROC_LIB} ${FFM_LIB} pthread rt m)")
+
+
+message (" 111 ${PMPROC_BIN_PATH}")
+add_subdirectory(${PMPROC_DIR})
+
+
+#--------------------------------------------------------
+#function define
+#--------------------------------------------------------
+function (EXCLUDE_FILES_FROM_DIR_IN_LIST _InFileList _excludeDirName _verbose)
+  foreach (ITR ${_InFileList})
+    if ("${_verbose}")
+      message(STATUS "ITR=${ITR}")
+    endif ("${_verbose}")
+
+    if ("${ITR}" MATCHES "(.*)${_excludeDirName}(.*)")                   # Check if the item matches the directory name in _excludeDirName
+      message(STATUS "Remove Item from List:${ITR}")
+      list (REMOVE_ITEM _InFileList ${ITR})                              # Remove the item from the list
+    endif ("${ITR}" MATCHES "(.*)${_excludeDirName}(.*)")
+
+  endforeach(ITR)
+  set(SOURCE_FILES ${_InFileList} PARENT_SCOPE)                          # Return the SOURCE_FILES variable to the calling parent
+endfunction (EXCLUDE_FILES_FROM_DIR_IN_LIST)
+
