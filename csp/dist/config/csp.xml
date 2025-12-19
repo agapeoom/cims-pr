@@ -10,7 +10,7 @@
 		<!--<SendOptionsPeriod>30</SendOptionsPeriod>-->
 		<TlsPort>5061</TlsPort>
 		<TlsAcceptTimeout>10</TlsAcceptTimeout>
-		<CertFile>csp.pem</CertFile>
+		<CertFile>../cert/csp.pem</CertFile>
 		<MinRegisterTimeout>60</MinRegisterTimeout>
 		<CallPickupId>**</CallPickupId>
 		<StackExecutePeriod>20</StackExecutePeriod>
@@ -26,11 +26,11 @@
 		<MaxSize>10000000</MaxSize>
 	</Log>
 	<XmlFolder>
-		<User>UserXml</User>
-		<SipServer>SipServerXml</SipServer>
+		<User>../config/UserXml</User>
+		<SipServer>../config/SipServerXml</SipServer>
 	</XmlFolder>
 	<Cdr>
-		<Folder>cdr</Folder>
+		<Folder>../log/cdr</Folder>
 	</Cdr>
 	<Monitor>
 	  <Port>6000</Port>

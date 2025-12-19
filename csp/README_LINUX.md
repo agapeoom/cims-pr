@@ -24,11 +24,7 @@ wsl cmake -S . -B build
 # 이 명령은 컴파일 후 'dist' 폴더로 실행 파일과 설정 파일들을 자동 복사합니다.
 wsl bash -c "cd build && make install -j4"
 # or 배포 디렉토리 지정
-wsl bash -c "cd build && cmake -DCMAKE_INSTALL_PREFIX=../dist .. && make install -j4"
-
-#1.1 build 
-wsl cmake -DCMAKE_INSTALL_PREFIX=../dist
-wsl bash -c "cd build && make install -j4"
+wsl bash -c "cd build && cmake -DCMAKE_INSTALL_PREFIX=../dist .. && make install"
 ```
 
 ### 배포 디렉토리 (`dist`) 구조
@@ -66,7 +62,7 @@ wsl ./csp.sh stop
 
 **인증서 재생성 (필요 시)**:
 ```bash
-wsl openssl req -x509 -newkey rsa:2048 -nodes -keyout build/csp.pem -out build/csp.pem -days 3650 -subj "/C=KR/ST=Seoul/L=Gangnam/O=CIMS/CN=csp"
+wsl openssl req -x509 -newkey rsa:2048 -nodes -keyout csp.pem -out csp.pem -days 3650 -subj "/C=KR/ST=Seoul/L=Gangnam/O=CIMS/CN=csp"
 # 이후 다시 make install 실행하여 배포
 ```
 

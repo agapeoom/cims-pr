@@ -2,7 +2,7 @@
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "")
+  set(CMAKE_INSTALL_PREFIX "/mnt/c/Users/nex/Desktop/work/cIMS/media/cims/csp/dist")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -79,7 +79,7 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/cert" TYPE FILE FILES "/mnt/c/Users/nex/Desktop/work/cIMS/media/cims/csp/build/csp.pem")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/cert" TYPE FILE FILES "/mnt/c/Users/nex/Desktop/work/cIMS/media/cims/csp/csp.pem")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)

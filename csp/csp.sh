@@ -9,14 +9,19 @@
 
 # program directory
 # Get the absolute path of the script's directory
-root_dir=$(cd "$(dirname "$0")" && pwd)
-bin_dir="$root_dir/build"
+#root_dir=$(cd "$(dirname "$0")" && pwd)
+root_dir=".."
+echo "RootDir:" $root_dir
+bin_dir=$root_dir"/bin"
+log_dir=$root_dir"/log"
+cfg_dir=$root_dir"/config"
+
 program="csp"
 program_list="$program"
 # Use the config file in the build directory
-program_arg="csp.xml"
+program_arg=$cfg_dir"/csp.xml"
 program_name="csp"
-logfile="log/cspdog.log"
+logfile=$log_dir"/cspdog.log"
 this_script="csp.sh"
 
 # get process pid

@@ -54,8 +54,8 @@ install(FILES csp.xml DESTINATION config)
 install(DIRECTORY SipServerXml UserXml cdr DESTINATION config)
 
 # 3. Certificates (cert/)
-# Install csp.pem from the build directory (where it was generated)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/csp.pem DESTINATION cert)
+# Install csp.pem from the source directory (as per user request)
+install(FILES csp.pem DESTINATION cert)
 
 # 4. Logs (log/)
 # Create empty log directory
