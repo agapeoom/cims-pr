@@ -28,6 +28,7 @@
 	<XmlFolder>
 		<User>../config/UserXml</User>
 		<SipServer>../config/SipServerXml</SipServer>
+		<Group>../config/GroupXml</Group>
 	</XmlFolder>
 	<Cdr>
 		<Folder>../log/cdr</Folder>

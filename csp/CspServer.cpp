@@ -32,6 +32,7 @@
 #include "SipServerSetup.h"
 #include "SipUserAgentVersion.h"
 #include "UserMap.h"
+#include "GroupMap.h"
 
 bool gbFork = true;
 /**
@@ -82,6 +83,10 @@ int ServiceMain() {
     ServerSignal();
     printf( "Loading SipServerMap...\n" );
     gclsSipServerMap.Load();
+    if ( gclsSetup.m_strGroupXmlFolder.length() > 0 ) {
+        printf( "Loading GroupMap from %s...\n", gclsSetup.m_strGroupXmlFolder.c_str() );
+        gclsGroupMap.Load( gclsSetup.m_strGroupXmlFolder.c_str() );
+    }
     printf( "Starting SipServer...\n" );
     if ( gclsSipServer.Start( clsSetup ) == false ) {
         CLog::Print( LOG_ERROR, "SipServer start error" );
@@ -109,6 +114,9 @@ int ServiceMain() {
         if ( iSecond % 60 == 0 ) {
             gclsSipServerMap.Load();
             gclsSipServerMap.SetSipUserAgentRegisterInfo();
+            if ( gclsSetup.m_strGroupXmlFolder.length() > 0 ) {
+                gclsGroupMap.Load( gclsSetup.m_strGroupXmlFolder.c_str() );
+            }
         }
         if ( iSecond == 3600 ) {
             iSecond = 0;

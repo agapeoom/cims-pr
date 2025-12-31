@@ -3,6 +3,12 @@
     <LocalIp>192.168.0.58</LocalIp>
     <UdpPort>5080</UdpPort>
   </Sip>
+  <To>
+    <Id>1010</Id>
+    <Ip>127.0.0.1</Ip>
+    <Port>5060</Port>
+    <Domain>127.0.0.1</Domain>
+  </To>
   <SipServer>
     <Ip>192.168.0.58</Ip>
     <Port>5060</Port>

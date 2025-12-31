@@ -137,6 +137,7 @@ bool CSipServerSetup::Read( const char *pszFileName ) {
     if ( pclsElement ) {
         pclsElement->SelectElementData( "User", m_strUserXmlFolder );
         pclsElement->SelectElementData( "SipServer", m_strSipServerXmlFolder );
+        pclsElement->SelectElementData( "Group", m_strGroupXmlFolder );
     }
 
     // CDR

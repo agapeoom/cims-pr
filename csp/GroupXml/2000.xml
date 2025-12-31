@@ -1,0 +1,8 @@
+<Group>
+    <Id>2000</Id>
+    <Name>Sales Team</Name>
+    <MemberList>
+        <Member>1001</Member>
+        <Member>1002</Member>
+    </MemberList>
+</Group>

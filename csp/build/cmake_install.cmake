@@ -74,6 +74,7 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/config" TYPE DIRECTORY FILES
     "/home/nex/work/cims/csp/SipServerXml"
     "/home/nex/work/cims/csp/UserXml"
+    "/home/nex/work/cims/csp/GroupXml"
     )
 endif()
 

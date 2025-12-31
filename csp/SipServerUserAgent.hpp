@@ -155,6 +155,16 @@ void CSipServer::EventIncomingCall( const char *pszCallId, const char *pszFrom, 
     }
 
     if ( SelectUser( pszTo, clsXmlUser ) == false ) {
+        // [GROUP CALL HOOK]
+        CSipCallRoute clsRouteTemp; 
+        // clsUserInfo is empty here so GetCallRoute might just result in defaults.
+        clsUserInfo.GetCallRoute( clsRouteTemp );
+        
+        // Pass route
+        if ( gclsGroupCallService.ProcessGroupCall( pszTo, pszFrom, pszCallId, pclsRtp, &clsRouteTemp ) ) {
+             return;
+        }
+
         printf( "[DEBUG] ## 1 EventIncomingCall: CallId=%s From=%s To=%s\n", pszCallId, pszFrom, pszTo );
 
         CXmlSipServer clsXmlSipServer;

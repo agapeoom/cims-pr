@@ -456,6 +456,54 @@ CspServer.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/CspServer.cpp.s
 .PHONY : CspServer.cpp.s
 
+GroupCallService.o: GroupCallService.cpp.o
+.PHONY : GroupCallService.o
+
+# target to build an object file
+GroupCallService.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/GroupCallService.cpp.o
+.PHONY : GroupCallService.cpp.o
+
+GroupCallService.i: GroupCallService.cpp.i
+.PHONY : GroupCallService.i
+
+# target to preprocess a source file
+GroupCallService.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/GroupCallService.cpp.i
+.PHONY : GroupCallService.cpp.i
+
+GroupCallService.s: GroupCallService.cpp.s
+.PHONY : GroupCallService.s
+
+# target to generate assembly for a file
+GroupCallService.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/GroupCallService.cpp.s
+.PHONY : GroupCallService.cpp.s
+
+GroupMap.o: GroupMap.cpp.o
+.PHONY : GroupMap.o
+
+# target to build an object file
+GroupMap.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/GroupMap.cpp.o
+.PHONY : GroupMap.cpp.o
+
+GroupMap.i: GroupMap.cpp.i
+.PHONY : GroupMap.i
+
+# target to preprocess a source file
+GroupMap.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/GroupMap.cpp.i
+.PHONY : GroupMap.cpp.i
+
+GroupMap.s: GroupMap.cpp.s
+.PHONY : GroupMap.s
+
+# target to generate assembly for a file
+GroupMap.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/GroupMap.cpp.s
+.PHONY : GroupMap.cpp.s
+
 Monitor.o: Monitor.cpp.o
 .PHONY : Monitor.o
 
@@ -648,6 +696,30 @@ UserMap.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/UserMap.cpp.s
 .PHONY : UserMap.cpp.s
 
+XmlGroup.o: XmlGroup.cpp.o
+.PHONY : XmlGroup.o
+
+# target to build an object file
+XmlGroup.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/XmlGroup.cpp.o
+.PHONY : XmlGroup.cpp.o
+
+XmlGroup.i: XmlGroup.cpp.i
+.PHONY : XmlGroup.i
+
+# target to preprocess a source file
+XmlGroup.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/XmlGroup.cpp.i
+.PHONY : XmlGroup.cpp.i
+
+XmlGroup.s: XmlGroup.cpp.s
+.PHONY : XmlGroup.s
+
+# target to generate assembly for a file
+XmlGroup.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/XmlGroup.cpp.s
+.PHONY : XmlGroup.cpp.s
+
 XmlSipServer.o: XmlSipServer.cpp.o
 .PHONY : XmlSipServer.o
 
@@ -733,6 +805,12 @@ help:
 	@echo "... CspServer.o"
 	@echo "... CspServer.i"
 	@echo "... CspServer.s"
+	@echo "... GroupCallService.o"
+	@echo "... GroupCallService.i"
+	@echo "... GroupCallService.s"
+	@echo "... GroupMap.o"
+	@echo "... GroupMap.i"
+	@echo "... GroupMap.s"
 	@echo "... Monitor.o"
 	@echo "... Monitor.i"
 	@echo "... Monitor.s"
@@ -757,6 +835,9 @@ help:
 	@echo "... UserMap.o"
 	@echo "... UserMap.i"
 	@echo "... UserMap.s"
+	@echo "... XmlGroup.o"
+	@echo "... XmlGroup.i"
+	@echo "... XmlGroup.s"
 	@echo "... XmlSipServer.o"
 	@echo "... XmlSipServer.i"
 	@echo "... XmlSipServer.s"

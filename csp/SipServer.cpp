@@ -28,6 +28,7 @@
 #include "SipMd5.h"
 #include "SipServerMap.h"
 #include "SipServerSetup.h"
+#include "GroupCallService.h"
 #include "SipUtility.h"
 #include "TimeString.h"
 #include "UserMap.h"

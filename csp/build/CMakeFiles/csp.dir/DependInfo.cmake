@@ -10,6 +10,8 @@ set(CMAKE_DEPENDS_LANGUAGES
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/home/nex/work/cims/csp/CallMap.cpp" "CMakeFiles/csp.dir/CallMap.cpp.o" "gcc" "CMakeFiles/csp.dir/CallMap.cpp.o.d"
   "/home/nex/work/cims/csp/CspServer.cpp" "CMakeFiles/csp.dir/CspServer.cpp.o" "gcc" "CMakeFiles/csp.dir/CspServer.cpp.o.d"
+  "/home/nex/work/cims/csp/GroupCallService.cpp" "CMakeFiles/csp.dir/GroupCallService.cpp.o" "gcc" "CMakeFiles/csp.dir/GroupCallService.cpp.o.d"
+  "/home/nex/work/cims/csp/GroupMap.cpp" "CMakeFiles/csp.dir/GroupMap.cpp.o" "gcc" "CMakeFiles/csp.dir/GroupMap.cpp.o.d"
   "/home/nex/work/cims/csp/Monitor.cpp" "CMakeFiles/csp.dir/Monitor.cpp.o" "gcc" "CMakeFiles/csp.dir/Monitor.cpp.o.d"
   "/home/nex/work/cims/csp/NonceMap.cpp" "CMakeFiles/csp.dir/NonceMap.cpp.o" "gcc" "CMakeFiles/csp.dir/NonceMap.cpp.o.d"
   "/home/nex/work/cims/csp/RtpMap.cpp" "CMakeFiles/csp.dir/RtpMap.cpp.o" "gcc" "CMakeFiles/csp.dir/RtpMap.cpp.o.d"
@@ -18,6 +20,7 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/home/nex/work/cims/csp/SipServerMap.cpp" "CMakeFiles/csp.dir/SipServerMap.cpp.o" "gcc" "CMakeFiles/csp.dir/SipServerMap.cpp.o.d"
   "/home/nex/work/cims/csp/SipServerSetup.cpp" "CMakeFiles/csp.dir/SipServerSetup.cpp.o" "gcc" "CMakeFiles/csp.dir/SipServerSetup.cpp.o.d"
   "/home/nex/work/cims/csp/UserMap.cpp" "CMakeFiles/csp.dir/UserMap.cpp.o" "gcc" "CMakeFiles/csp.dir/UserMap.cpp.o.d"
+  "/home/nex/work/cims/csp/XmlGroup.cpp" "CMakeFiles/csp.dir/XmlGroup.cpp.o" "gcc" "CMakeFiles/csp.dir/XmlGroup.cpp.o.d"
   "/home/nex/work/cims/csp/XmlSipServer.cpp" "CMakeFiles/csp.dir/XmlSipServer.cpp.o" "gcc" "CMakeFiles/csp.dir/XmlSipServer.cpp.o.d"
   "/home/nex/work/cims/csp/XmlUser.cpp" "CMakeFiles/csp.dir/XmlUser.cpp.o" "gcc" "CMakeFiles/csp.dir/XmlUser.cpp.o.d"
   )

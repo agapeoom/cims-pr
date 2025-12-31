@@ -24,4 +24,5 @@
 /home/nex/work/cims/csp/dist/config/UserXml/1015.xml
 /home/nex/work/cims/csp/dist/config/UserXml/1005.xml
 /home/nex/work/cims/csp/dist/config/UserXml/1017.xml
+/home/nex/work/cims/csp/dist/config/GroupXml/2000.xml
 /home/nex/work/cims/csp/dist/cert/csp.pem

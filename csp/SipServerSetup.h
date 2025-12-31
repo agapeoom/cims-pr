@@ -108,6 +108,9 @@ public:
     /** IP-PBX 정보 저장 폴더 - m_strUserXmlFolder 가 설정되어 있지 않으면 본 항목은 사용되지 않는다. */
     std::string m_strSipServerXmlFolder;
 
+    /** 그룹 정보 저장 폴더 */
+    std::string m_strGroupXmlFolder;
+
     /** CDR 파일 저장 폴더 - m_strUserXmlFolder 가 설정되어 있지 않으면 본 항목은 사용되지 않는다. */
     std::string m_strCdrFolder;
 
