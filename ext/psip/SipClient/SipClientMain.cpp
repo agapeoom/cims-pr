@@ -1,20 +1,3 @@
-/* 
- * Copyright (C) 2012 Yee Young Han <websearch@naver.com> (http://blog.naver.com/websearch)
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA 
- */
 
 #include "SipClient.h"
 #include "SipClientSetup.h"
@@ -23,15 +6,35 @@
 #include "RtpThread.h"
 #include "MemoryDebug.h"
 
-extern std::string	gstrInviteId;
 
-/**
- * @ingroup SipClient
- * @brief SIP ≈¨∂Û¿Ãæ∆Æ
- * @param argc 
- * @param argv 
- * @returns 0 ¿ª ∏Æ≈œ«—¥Ÿ.
- */
+extern std::string	gstrInviteId;
+CSipUserAgent clsUserAgent;
+
+
+
+#include <stdarg.h>
+
+class CConsoleLog : public ILogCallBack
+{
+public:
+    void Print( EnumLogLevel eLevel, const char * fmt, ... )
+    {
+        if( (eLevel & LOG_NETWORK) == 0 ) return;
+
+        va_list ap;
+        char    szBuf[LOG_MAX_SIZE];
+
+        va_start( ap, fmt );
+        vsnprintf( szBuf, sizeof(szBuf), fmt, ap );
+        va_end( ap );
+
+        printf( "%s\n", szBuf );
+    }
+};
+
+CConsoleLog gclsConsoleLog;
+
+
 int main( int argc, char * argv[] )
 {
 	if( argc != 2 )
@@ -52,11 +55,16 @@ int main( int argc, char * argv[] )
 #ifdef _DEBUG
 	_CrtSetDbgFlag( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF | _CRTDBG_CHECK_ALWAYS_DF );
 	CLog::SetDirectory( "c:\\temp\\sipclient" );
+#endif
+#else
+	// CLog::SetDirectory( "log" );
+#endif
 	CLog::SetLevel( LOG_NETWORK | LOG_DEBUG | LOG_INFO );
-#endif
-#endif
+    CLog::SetCallBack( &gclsConsoleLog );
+
 	
-	CSipUserAgent clsUserAgent;
+	// CSipUserAgent clsUserAgent; // Moved to global
+
 	CSipServerInfo clsServerInfo;
 	CSipStackSetup clsSetup;
 	CSipClient clsSipClient;
@@ -70,11 +78,11 @@ int main( int argc, char * argv[] )
 	clsServerInfo.m_iLoginTimeout = 600;
 	//clsServerInfo.m_iNatTimeout = 10;
 
-	// ªÔº∫ 070 º≠∫ÒΩ∫ ∑Œ±◊¿ŒΩ√ User-Agent «Ï¥ıø° ∆Øºˆ«— πÆ¿⁄ø≠¿Ã ∆˜«‘µ«¡ˆ æ ¿∏∏È 480 ¿¿¥‰¿Ã ºˆΩ≈µ»¥Ÿ.
-	// æ∆∑°øÕ ∞∞¿Ã Acrobits ¿∏∑Œ User-Agent «Ï¥ı∞° Ω√¿€«œ∏È ¡§ªÛ¿˚¿∏∑Œ 401 ¿¿¥‰¿ª ºˆΩ≈«—¥Ÿ.
+	// ÔøΩÔº∫ 070 ÔøΩÔøΩÔøΩÔøΩ ÔøΩŒ±ÔøΩÔøΩŒΩÔøΩ User-Agent ÔøΩÔøΩÔøΩÔøΩÔøΩ ∆ØÔøΩÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩ⁄øÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩ‘µÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ 480 ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩ≈µ»¥ÔøΩ.
+	// ÔøΩ∆∑ÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩ Acrobits ÔøΩÔøΩÔøΩÔøΩ User-Agent ÔøΩÔøΩÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩÔøΩœ∏ÔøΩ ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ 401 ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩÔøΩ—¥ÔøΩ.
 	//clsSetup.m_strUserAgent = "Acrobits";
 
-	// Expires «Ï¥ıø° 300 ¿ª ¿‘∑¬«œ∞Ì ΩÕ¿∏∏È æ∆∑°øÕ ∞∞¿Ã º≥¡§«œ∏È µ»¥Ÿ.
+	// Expires ÔøΩÔøΩÔøΩÔøΩÔøΩ 300 ÔøΩÔøΩ ÔøΩ‘∑ÔøΩÔøΩœ∞ÔøΩ ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ ÔøΩ∆∑ÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩÔøΩœ∏ÔøΩ ÔøΩ»¥ÔøΩ.
 	// clsServerInfo.m_iLoginTimeout = 300;
 
 	clsSetup.m_iLocalUdpPort = gclsSetupFile.m_iUdpPort;
@@ -91,10 +99,10 @@ int main( int argc, char * argv[] )
 		clsSetup.m_strCertFile = gclsSetupFile.m_strPemFile;
 	}
 
-	// Via «Ï¥ı π◊ Contact «Ï¥ıø° ∑Œƒ√ ºˆΩ≈ ∆˜∆Æ π¯»£∏¶ º≥¡§«œ∞Ì ΩÕ¿∏∏È æ∆∑°øÕ ∞∞¿Ã º≥¡§«œ∏È µ»¥Ÿ.
+	// Via ÔøΩÔøΩÔøΩ ÔøΩÔøΩ Contact ÔøΩÔøΩÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩ ÔøΩÔøΩ∆Æ ÔøΩÔøΩ»£ÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩÔøΩœ∞ÔøΩ ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ ÔøΩ∆∑ÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩÔøΩœ∏ÔøΩ ÔøΩ»¥ÔøΩ.
 	// clsSetup.m_bUseContactListenPort = true;
 
-	// UDP ºˆΩ≈ æ≤∑πµÂ¿« ±‚∫ª ∞≥ºˆ¥¬ 1∞≥¿Ã¥Ÿ. ¿Ã∏¶ ºˆ¡§«œ∑¡∏È CSipStackSetup.m_iUdpThreadCount ∏¶ ºˆ¡§«œ∏È µ»¥Ÿ.
+	// UDP ÔøΩÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ ÔøΩ‚∫ª ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ 1ÔøΩÔøΩÔøΩÃ¥ÔøΩ. ÔøΩÃ∏ÔøΩ ÔøΩÔøΩÔøΩÔøΩÔøΩœ∑ÔøΩÔøΩÔøΩ CSipStackSetup.m_iUdpThreadCount ÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩÔøΩœ∏ÔøΩ ÔøΩ»¥ÔøΩ.
 
 	clsUserAgent.InsertRegisterInfo( clsServerInfo );
 
@@ -180,7 +188,7 @@ int main( int argc, char * argv[] )
 		}
 		else if( szCommand[0] == 't' )
 		{
-			// OPTION ∏ﬁΩ√¡ˆ ¿¸º€ øπ¡¶
+			// OPTION ÔøΩﬁΩÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩ
 			CSipMessage * pclsMessage = new CSipMessage();
 			if( pclsMessage )
 			{
@@ -189,29 +197,29 @@ int main( int argc, char * argv[] )
 				SipMakeTag( szTag, sizeof(szTag) );
 				SipMakeCallIdName( szCallIdName, sizeof(szCallIdName) );
 
-				// Call-ID ∏¶ ¿˙¿Â«—¥Ÿ.
+				// Call-ID ÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩÔøΩ—¥ÔøΩ.
 				pclsMessage->m_clsCallId.m_strName = szCallIdName;
 				pclsMessage->m_clsCallId.m_strHost = clsUserAgent.m_clsSipStack.m_clsSetup.m_strLocalIp;
 
 				pclsMessage->m_eTransport = E_SIP_UDP;
 
-				// SIP method ∏¶ ¿˙¿Â«—¥Ÿ.
+				// SIP method ÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩÔøΩ—¥ÔøΩ.
 				pclsMessage->m_strSipMethod = SIP_METHOD_OPTIONS;
 
-				// Request Uri ∏¶ ¿˙¿Â«—¥Ÿ.
+				// Request Uri ÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩÔøΩ—¥ÔøΩ.
 				pclsMessage->m_clsReqUri.Set( SIP_PROTOCOL, "1000", "192.168.0.1", 5060 );
 
-				// CSeq ∏¶ ¿˙¿Â«—¥Ÿ.
+				// CSeq ÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩÔøΩ—¥ÔøΩ.
 				pclsMessage->m_clsCSeq.Set( 1, SIP_METHOD_OPTIONS );
 
-				// From «Ï¥ı∏¶ ¿˙¿Â«—¥Ÿ.
+				// From ÔøΩÔøΩÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩÔøΩ—¥ÔøΩ.
 				pclsMessage->m_clsFrom.m_clsUri.Set( SIP_PROTOCOL, "2000", "192.168.0.200", 5060 );
 				pclsMessage->m_clsFrom.InsertParam( SIP_TAG, szTag );
 
-				// To «Ï¥ı∏¶ ¿˙¿Â«—¥Ÿ.
+				// To ÔøΩÔøΩÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩÔøΩ—¥ÔøΩ.
 				pclsMessage->m_clsTo.m_clsUri.Set( SIP_PROTOCOL, "1000", "192.168.0.1", 5060 );
 
-				// SIP ∏ﬁΩ√¡ˆ∏¶ ¿¸º€«“ ¥ÎªÛ IP ¡÷º“øÕ ∆˜∆Æ π¯»£ π◊ «¡∑Œ≈‰ƒ›¿ª ¿˙¿Â«—¥Ÿ.
+				// SIP ÔøΩﬁΩÔøΩÔøΩÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩ IP ÔøΩ÷º“øÔøΩ ÔøΩÔøΩ∆Æ ÔøΩÔøΩ»£ ÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩÔøΩ—¥ÔøΩ.
 				pclsMessage->AddRoute( "192.168.0.1", 5060, E_SIP_UDP );
 
 				clsUserAgent.m_clsSipStack.SendSipMessage( pclsMessage );

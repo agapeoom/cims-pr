@@ -417,11 +417,11 @@ CMakeFiles/SipUserAgent.dir/all: CMakeFiles/opensrtp.dir/all
 CMakeFiles/SipUserAgent.dir/all: CMakeFiles/SipPlatform.dir/all
 CMakeFiles/SipUserAgent.dir/all: CMakeFiles/SipParser.dir/all
 CMakeFiles/SipUserAgent.dir/all: CMakeFiles/SdpParser.dir/all
-CMakeFiles/SipUserAgent.dir/all: CMakeFiles/ServerPlatform.dir/all
 CMakeFiles/SipUserAgent.dir/all: CMakeFiles/StunParser.dir/all
 CMakeFiles/SipUserAgent.dir/all: CMakeFiles/XmlParser.dir/all
 CMakeFiles/SipUserAgent.dir/all: CMakeFiles/TcpStack.dir/all
 CMakeFiles/SipUserAgent.dir/all: CMakeFiles/SipStack.dir/all
+CMakeFiles/SipUserAgent.dir/all: CMakeFiles/ServerPlatform.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/SipUserAgent.dir/build.make CMakeFiles/SipUserAgent.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/SipUserAgent.dir/build.make CMakeFiles/SipUserAgent.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nex/work/cims/ext/psip/build_master/CMakeFiles --progress-num=66,67,68,69,70 "Built target SipUserAgent"
@@ -451,14 +451,14 @@ CMakeFiles/EchoSipServer.dir/all: CMakeFiles/opensrtp.dir/all
 CMakeFiles/EchoSipServer.dir/all: CMakeFiles/SipPlatform.dir/all
 CMakeFiles/EchoSipServer.dir/all: CMakeFiles/SipParser.dir/all
 CMakeFiles/EchoSipServer.dir/all: CMakeFiles/SdpParser.dir/all
-CMakeFiles/EchoSipServer.dir/all: CMakeFiles/ServerPlatform.dir/all
-CMakeFiles/EchoSipServer.dir/all: CMakeFiles/SipUserAgent.dir/all
 CMakeFiles/EchoSipServer.dir/all: CMakeFiles/StunParser.dir/all
 CMakeFiles/EchoSipServer.dir/all: CMakeFiles/XmlParser.dir/all
 CMakeFiles/EchoSipServer.dir/all: CMakeFiles/HttpParser.dir/all
 CMakeFiles/EchoSipServer.dir/all: CMakeFiles/TcpStack.dir/all
 CMakeFiles/EchoSipServer.dir/all: CMakeFiles/HttpStack.dir/all
 CMakeFiles/EchoSipServer.dir/all: CMakeFiles/SipStack.dir/all
+CMakeFiles/EchoSipServer.dir/all: CMakeFiles/ServerPlatform.dir/all
+CMakeFiles/EchoSipServer.dir/all: CMakeFiles/SipUserAgent.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/EchoSipServer.dir/build.make CMakeFiles/EchoSipServer.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/EchoSipServer.dir/build.make CMakeFiles/EchoSipServer.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nex/work/cims/ext/psip/build_master/CMakeFiles --progress-num=1,2 "Built target EchoSipServer"
@@ -488,14 +488,14 @@ CMakeFiles/SimpleSipServer.dir/all: CMakeFiles/opensrtp.dir/all
 CMakeFiles/SimpleSipServer.dir/all: CMakeFiles/SipPlatform.dir/all
 CMakeFiles/SimpleSipServer.dir/all: CMakeFiles/SipParser.dir/all
 CMakeFiles/SimpleSipServer.dir/all: CMakeFiles/SdpParser.dir/all
-CMakeFiles/SimpleSipServer.dir/all: CMakeFiles/ServerPlatform.dir/all
-CMakeFiles/SimpleSipServer.dir/all: CMakeFiles/SipUserAgent.dir/all
 CMakeFiles/SimpleSipServer.dir/all: CMakeFiles/StunParser.dir/all
 CMakeFiles/SimpleSipServer.dir/all: CMakeFiles/XmlParser.dir/all
 CMakeFiles/SimpleSipServer.dir/all: CMakeFiles/HttpParser.dir/all
 CMakeFiles/SimpleSipServer.dir/all: CMakeFiles/TcpStack.dir/all
 CMakeFiles/SimpleSipServer.dir/all: CMakeFiles/HttpStack.dir/all
 CMakeFiles/SimpleSipServer.dir/all: CMakeFiles/SipStack.dir/all
+CMakeFiles/SimpleSipServer.dir/all: CMakeFiles/ServerPlatform.dir/all
+CMakeFiles/SimpleSipServer.dir/all: CMakeFiles/SipUserAgent.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/SimpleSipServer.dir/build.make CMakeFiles/SimpleSipServer.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/SimpleSipServer.dir/build.make CMakeFiles/SimpleSipServer.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nex/work/cims/ext/psip/build_master/CMakeFiles --progress-num=18,19 "Built target SimpleSipServer"
@@ -525,14 +525,14 @@ CMakeFiles/SipClient.dir/all: CMakeFiles/opensrtp.dir/all
 CMakeFiles/SipClient.dir/all: CMakeFiles/SipPlatform.dir/all
 CMakeFiles/SipClient.dir/all: CMakeFiles/SipParser.dir/all
 CMakeFiles/SipClient.dir/all: CMakeFiles/SdpParser.dir/all
-CMakeFiles/SipClient.dir/all: CMakeFiles/ServerPlatform.dir/all
-CMakeFiles/SipClient.dir/all: CMakeFiles/SipUserAgent.dir/all
 CMakeFiles/SipClient.dir/all: CMakeFiles/StunParser.dir/all
 CMakeFiles/SipClient.dir/all: CMakeFiles/XmlParser.dir/all
 CMakeFiles/SipClient.dir/all: CMakeFiles/HttpParser.dir/all
 CMakeFiles/SipClient.dir/all: CMakeFiles/TcpStack.dir/all
 CMakeFiles/SipClient.dir/all: CMakeFiles/HttpStack.dir/all
 CMakeFiles/SipClient.dir/all: CMakeFiles/SipStack.dir/all
+CMakeFiles/SipClient.dir/all: CMakeFiles/ServerPlatform.dir/all
+CMakeFiles/SipClient.dir/all: CMakeFiles/SipUserAgent.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/SipClient.dir/build.make CMakeFiles/SipClient.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/SipClient.dir/build.make CMakeFiles/SipClient.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nex/work/cims/ext/psip/build_master/CMakeFiles --progress-num=20,21,22,23 "Built target SipClient"
@@ -562,14 +562,14 @@ CMakeFiles/SipLoadBalancer.dir/all: CMakeFiles/opensrtp.dir/all
 CMakeFiles/SipLoadBalancer.dir/all: CMakeFiles/SipPlatform.dir/all
 CMakeFiles/SipLoadBalancer.dir/all: CMakeFiles/SipParser.dir/all
 CMakeFiles/SipLoadBalancer.dir/all: CMakeFiles/SdpParser.dir/all
-CMakeFiles/SipLoadBalancer.dir/all: CMakeFiles/ServerPlatform.dir/all
-CMakeFiles/SipLoadBalancer.dir/all: CMakeFiles/SipUserAgent.dir/all
 CMakeFiles/SipLoadBalancer.dir/all: CMakeFiles/StunParser.dir/all
 CMakeFiles/SipLoadBalancer.dir/all: CMakeFiles/XmlParser.dir/all
 CMakeFiles/SipLoadBalancer.dir/all: CMakeFiles/HttpParser.dir/all
 CMakeFiles/SipLoadBalancer.dir/all: CMakeFiles/TcpStack.dir/all
 CMakeFiles/SipLoadBalancer.dir/all: CMakeFiles/HttpStack.dir/all
 CMakeFiles/SipLoadBalancer.dir/all: CMakeFiles/SipStack.dir/all
+CMakeFiles/SipLoadBalancer.dir/all: CMakeFiles/ServerPlatform.dir/all
+CMakeFiles/SipLoadBalancer.dir/all: CMakeFiles/SipUserAgent.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/SipLoadBalancer.dir/build.make CMakeFiles/SipLoadBalancer.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/SipLoadBalancer.dir/build.make CMakeFiles/SipLoadBalancer.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nex/work/cims/ext/psip/build_master/CMakeFiles --progress-num=24,25,26,27 "Built target SipLoadBalancer"
@@ -599,14 +599,14 @@ CMakeFiles/SipSpeedLinux.dir/all: CMakeFiles/opensrtp.dir/all
 CMakeFiles/SipSpeedLinux.dir/all: CMakeFiles/SipPlatform.dir/all
 CMakeFiles/SipSpeedLinux.dir/all: CMakeFiles/SipParser.dir/all
 CMakeFiles/SipSpeedLinux.dir/all: CMakeFiles/SdpParser.dir/all
-CMakeFiles/SipSpeedLinux.dir/all: CMakeFiles/ServerPlatform.dir/all
-CMakeFiles/SipSpeedLinux.dir/all: CMakeFiles/SipUserAgent.dir/all
 CMakeFiles/SipSpeedLinux.dir/all: CMakeFiles/StunParser.dir/all
 CMakeFiles/SipSpeedLinux.dir/all: CMakeFiles/XmlParser.dir/all
 CMakeFiles/SipSpeedLinux.dir/all: CMakeFiles/HttpParser.dir/all
 CMakeFiles/SipSpeedLinux.dir/all: CMakeFiles/TcpStack.dir/all
 CMakeFiles/SipSpeedLinux.dir/all: CMakeFiles/HttpStack.dir/all
 CMakeFiles/SipSpeedLinux.dir/all: CMakeFiles/SipStack.dir/all
+CMakeFiles/SipSpeedLinux.dir/all: CMakeFiles/ServerPlatform.dir/all
+CMakeFiles/SipSpeedLinux.dir/all: CMakeFiles/SipUserAgent.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/SipSpeedLinux.dir/build.make CMakeFiles/SipSpeedLinux.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/SipSpeedLinux.dir/build.make CMakeFiles/SipSpeedLinux.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nex/work/cims/ext/psip/build_master/CMakeFiles --progress-num=49,50 "Built target SipSpeedLinux"

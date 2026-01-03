@@ -299,15 +299,7 @@ unsigned char ulaw2alaw( unsigned char uval )
 	return ((uval & 0x80) ? (0xD5 ^ (_u2a[0xFF ^ uval] - 1)) : (0x55 ^ (_u2a[0x7F ^ uval] - 1)));
 }
 
-/**
- * @ingroup SipClientMFC
- * @brief PCM 을 Ulaw 로 변환한다.
- * @param pszPCM		PCM 변수
- * @param iPcmLen		PCM 변수 길이 (320)
- * @param pszUlaw		Ulaw 변수
- * @param iUlawLen	Ulaw 변수 길이
- * @returns Ulaw 로 변환한 길이를 리턴한다.
- */
+
 int PcmToUlaw( const char * pszPCM, int iPcmLen, char * pszUlaw, int iUlawLen )
 {
 	int iCount = iPcmLen >> 1;
@@ -322,15 +314,7 @@ int PcmToUlaw( const char * pszPCM, int iPcmLen, char * pszUlaw, int iUlawLen )
 	return iCount;
 }
 
-/**
- * @ingroup SipClientMFC
- * @brief PCM 을 Alaw 로 변환한다.
- * @param pszPcm		PCM 변수
- * @param iPcmLen		PCM 변수 길이 (320)
- * @param pszAlaw		Alaw 변수
- * @param iAlawLen	Alaw 변수 길이
- * @returns Alaw 로 변환한 길이를 리턴한다.
- */
+
 int PcmToAlaw( const char * pszPcm, int iPcmLen, char * pszAlaw, int iAlawLen )
 {
 	int iCount = iPcmLen >> 1;
@@ -345,15 +329,7 @@ int PcmToAlaw( const char * pszPcm, int iPcmLen, char * pszAlaw, int iAlawLen )
 	return iCount;
 }
 
-/**
- * @ingroup SipClientMFC
- * @brief Ulaw 를 PCM 으로 변환한다.
- * @param pszUlaw		Ulaw 변수
- * @param iUlawLen	Ulaw 변수 길이
- * @param pszPCM		PCM 변수
- * @param iPcmLen		PCM 변수 길이
- * @returns PCM 으로 변환한 길이를 리턴한다.
- */
+
 int UlawToPcm( const char * pszUlaw, int iUlawLen, char * pszPCM, int iPcmLen )
 {
 	const BYTE * pszSource = (LPBYTE)pszUlaw;
@@ -367,15 +343,7 @@ int UlawToPcm( const char * pszUlaw, int iUlawLen, char * pszPCM, int iPcmLen )
 	return iUlawLen << 1;
 }
 
-/**
- * @ingroup SipClientMFC
- * @brief Alaw 를 PCM 으로 변환한다.
- * @param pszAlaw		Alaw 변수
- * @param iAlawLen	Alaw 변수 길이
- * @param pszPcm		PCM 변수
- * @param iPcmLen		PCM 변수 길이
- * @returns PCM 으로 변환한 길이를 리턴한다.
- */
+
 int AlawToPcm( const char * pszAlaw, int iAlawLen, char * pszPcm, int iPcmLen )
 {
 	const BYTE * pszSource = (LPBYTE)pszAlaw;

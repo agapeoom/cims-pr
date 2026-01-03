@@ -84,7 +84,7 @@ openssl req -x509 -newkey rsa:2048 -nodes -keyout csp.pem -out csp.pem -days 365
   ./csp.sh stop
 
   # foreground 실행
-  ./csp  -n
+  ./csp -n -c ../config/csp.xml
   ```
 
 ## 5. 포트 정보

@@ -27,6 +27,7 @@ THREAD_API RtpThreadRecv(LPVOID lpParameter) {
 
   TcpSetPollIn(sttPoll[0], gclsRtpThread.m_hSocket);
 
+/*
 #if !defined(WIN32) && !defined(NO_ALSA)
   int n;
   snd_pcm_t *psttSound = NULL;
@@ -64,6 +65,14 @@ THREAD_API RtpThreadRecv(LPVOID lpParameter) {
   if (CheckError(n, "snd_pcm_hw_params"))
     goto FUNC_END;
 #endif
+*/
+
+    // [RTP STATS VARS]
+    time_t tLastTime = time(NULL);
+    unsigned long long ullPacketCount = 0;
+    unsigned long long ullByteCount = 0;
+    time_t tCurrentTime;
+
 
   while (gclsRtpThread.m_bStopEvent == false) {
     if (poll(sttPoll, 1, 200) <= 0) {
@@ -79,6 +88,7 @@ THREAD_API RtpThreadRecv(LPVOID lpParameter) {
     if (iPacketLen == 160 + sizeof(RtpHeader)) {
       UlawToPcm(szPacket + sizeof(RtpHeader), 160, szPCM, sizeof(szPCM));
 
+/*
 #if !defined(WIN32) && !defined(NO_ALSA)
       n = snd_pcm_writei(psttSound, szPCM, sizeof(szPCM) / 2);
       if (n == -EPIPE) {
@@ -86,9 +96,25 @@ THREAD_API RtpThreadRecv(LPVOID lpParameter) {
       } else if (CheckError(n, "snd_pcm_writei"))
         break;
 #endif
+*/
     }
+
+    // [RTP STATS LOGIC]
+    ullPacketCount++;
+    ullByteCount += iPacketLen;
+    tCurrentTime = time(NULL);
+    if( tCurrentTime - tLastTime >= 10 )
+    {
+        printf( "[RTP STATS] Time: %lld, Packets: %llu, Bytes: %llu\n", (long long)tCurrentTime, ullPacketCount, ullByteCount );
+        tLastTime = tCurrentTime;
+        ullPacketCount = 0;
+        ullByteCount = 0;
+    }
+
   }
 
+
+/*
 #if !defined(WIN32) && !defined(NO_ALSA)
 FUNC_END:
   if (psttSound) {
@@ -96,6 +122,7 @@ FUNC_END:
     snd_pcm_close(psttSound);
   }
 #endif
+*/
 
   gclsRtpThread.m_bRecvThreadRun = false;
 

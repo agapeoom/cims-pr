@@ -34,6 +34,7 @@ THREAD_API RtpThreadSend(LPVOID lpParameter) {
 
   psttRtpHeader->SetPT(0);
 
+/*
 #if !defined(WIN32) && !defined(NO_ALSA)
   int n;
   snd_pcm_t *psttSound = NULL;
@@ -70,13 +71,19 @@ THREAD_API RtpThreadSend(LPVOID lpParameter) {
   if (CheckError(n, "snd_pcm_hw_params"))
     goto FUNC_END;
 #endif
+*/
 
   while (gclsRtpThread.m_bStopEvent == false) {
+/*
 #if !defined(WIN32) && !defined(NO_ALSA)
     n = snd_pcm_readi(psttSound, szRead, sizeof(szRead) / 2);
     if (CheckError(n, "snd_pcm_readi"))
       break;
 #endif
+*/
+    // [SYNTHETIC RTP]
+    memset( szRead, 0x12, sizeof(szRead) );
+    MiliSleep( 20 );
 
     psttRtpHeader->SetSeq(sSeq);
     psttRtpHeader->SetTimeStamp(iTimeStamp);
@@ -90,6 +97,7 @@ THREAD_API RtpThreadSend(LPVOID lpParameter) {
             gclsRtpThread.m_strDestIp.c_str(), gclsRtpThread.m_iDestPort);
   }
 
+/*
 #if !defined(WIN32) && !defined(NO_ALSA)
 FUNC_END:
   if (psttSound) {
@@ -97,6 +105,7 @@ FUNC_END:
     snd_pcm_close(psttSound);
   }
 #endif
+*/
 
   gclsRtpThread.m_bSendThreadRun = false;
 
