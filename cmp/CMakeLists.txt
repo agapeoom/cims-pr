@@ -14,12 +14,14 @@ message(" ***> ${PMPROC_LIB_PATH}")
 #message("${FFM_LIB}")
 
 
-add_executable(pmpagent pmpagent.cpp)
-add_executable(prtpsim prtpsim.cpp)
+#add_executable(pmpagent pmpagent.cpp)
+#add_executable(prtpsim prtpsim.cpp)
+add_executable(cmp CmpServer.cpp McpttGroup.cpp PRtpHandler.cpp)
 
 set(TEST_SRCS
-   pmpagent 
-   prtpsim 
+   #pmpagent 
+   #prtpsim 
+   cmp
 )
 
 

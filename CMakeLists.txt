@@ -28,16 +28,16 @@ include(ExternalProject)
 set(PMP_INC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 
+#=================================================
+set(EXT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ext)
+set(PKG_BASE ${CMAKE_CURRENT_SOURCE_DIR}/pkg)
+
 set(PASF     pasf)
-set(PASF_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${PASF})
+set(PASF_DIR ${EXT_DIR}/${PASF})
 set(PASF_INC ${PASF_DIR}/include)
 set(PASF_LIB_PATH ${PASF_DIR}/lib})
 set(PASF_BIN_PATH ${TMPA_BIN_PATH})
 set(PASF_LIB ${PASF})
-
-#=================================================
-set(EXT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ext)
-set(PKG_BASE ${CMAKE_CURRENT_SOURCE_DIR}/pkg)
 set(BUILD_BASE ${CMAKE_CURRENT_SOURCE_DIR}/build)
 
 set(PDK_EXT pdk-3.2.5)
@@ -238,10 +238,10 @@ set(JT_INC ${JT_DIR})
 set(JT_LIB jtlib)
 
 INCLUDE_DIRECTORIES(${PDK_INC} ${PALOG_INC} ${AMTRTP_INC} ${TBB_INC})
-add_subdirectory(${PDK_DIR})
-add_subdirectory(${HUDTMF_DIR})
-add_subdirectory(${AMTRTP_DIR})
-add_subdirectory(${JT_DIR})
+#add_subdirectory(${PDK_DIR})
+#add_subdirectory(${HUDTMF_DIR})
+#add_subdirectory(${AMTRTP_DIR})
+#add_subdirectory(${JT_DIR})
 #add_subdirectory(${EVS_DIR})
 add_subdirectory(${PASF_DIR})
 
@@ -254,7 +254,7 @@ INCLUDE_DIRECTORIES(${FFM_INC} ${X264_INC} ${PDK_INC} ${AMTRTP_INC} ${HUDTMF_INC
 
 LINK_DIRECTORIES(${FFM_LIB_PATH} ${X264_LIB_PATH} ${GTEST_LIB_PATH} ${AMTRTP_LIB_PATH} ${PDK_LIB_PATH} ${AMR_LIB_PATH} ${AMRWB_LIB_PATH} ${HUDTMF_PATH} ${TBB_LIB_PATH} ${JT_LIB_PATH}  ${PASF_LIB_PATH} )
 #LINK_LIBRARIES( ${X264_LIB} ${AMTRTP_LIB} ${GTEST_LIB} ${PDK_LIB} ${PALOG_LIB} ${AMR_LIB} ${AMRWB_LIB} ${TBB_LIB} ${HUDTMF_LIB} ${JT_LIB} ${PASF_LIB} ${PMPROC_LIB} ${FFM_LIB} pthread rt m) 
-LINK_LIBRARIES( ${X264_LIB} ${AMTRTP_LIB} ${GTEST_LIB} ${PDK_LIB} ${PALOG_LIB} ${AMR_LIB} ${AMRWB_LIB} ${TBB_LIB} ${HUDTMF_LIB} ${JT_LIB} ${PASF_LIB} ${PMPROC_LIB} pthread rt m) 
+LINK_LIBRARIES( ${PASF_LIB} pthread rt m) 
 
 
 message("LINK_DIRECTORIES(${FFM_LIB_PATH} ${X264_LIB_PATH} ${GTEST_LIB_PATH} ${AMTRTP_LIB_PATH} ${PDK_LIB_PATH} ${AMR_LIB_PATH} ${AMRWB_LIB_PATH} ${HUDTMF_PATH} ${TBB_LIB_PATH} ${JT_LIB_PATH}  ${PASF_LIB_PATH} )")
@@ -263,7 +263,9 @@ message("LINK_LIBRARIES( ${X264_LIB} ${AMTRTP_LIB} ${GTEST_LIB} ${PDK_LIB} ${PAL
 
 
 message (" 111 ${PMPROC_BIN_PATH}")
-add_subdirectory(${PMPROC_DIR})
+#add_subdirectory(${PMPROC_DIR})
+add_subdirectory(cmp)
+
 
 
 #--------------------------------------------------------
