@@ -190,6 +190,7 @@ ExternalProject_Add(
 	  INSTALL_DIR  ${FFM_DIR}
 	  SOURCE_DIR ${FFM_DIR}/src
 	  BINARY_DIR ${FFM_DIR}
+      DEPENDS ${AMR_EXT} ${AMRWB_EXT}
 	  CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env "CFLAGS=-I${AMR_PKG_DIR}/include -I${AMRWB_PKG_DIR}/include" "LDFLAGS=-L${AMR_PKG_DIR}/lib -L${AMRWB_PKG_DIR}/lib" PATH=$ENV{PATH} ${FFM_SRC}/configure --prefix=${FFM_DIR} --disable-shared --enable-static  --enable-version3 --enable-gpl --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libvo-amrwbenc --disable-libx264 --disable-amf --disable-audiotoolbox --disable-cuda-nvcc --disable-cuda-llvm --disable-cuvid --disable-d3d11va --disable-dxva2 --disable-ffnvcodec --disable-libdrm --disable-libmfx --disable-libnpp --disable-nvdec --disable-nvenc --disable-v4l2-m2m --disable-vaapi --disable-vdpau --disable-videotoolbox --disable-x86asm --disable-asm --enable-nonfree --enable-pthreads
    INSTALL_COMMAND make install
 )

@@ -11,6 +11,11 @@ Ensure the following tools are installed on your build server:
 - **Make**
 
 ## Build Instructions
+0. **Install Prerequisites**
+   ```bash
+   sudo apt-get update
+   sudo apt-get install -y cmake build-essential libssl-dev
+   ```
 
 1. **Clone the repository**
    ```bash
