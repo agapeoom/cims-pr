@@ -1,2 +1,0 @@
-/usr/bin/ar qc libserverplatform.a CMakeFiles/serverplatform.dir/ServerPlatform/InstallService.cpp.o CMakeFiles/serverplatform.dir/ServerPlatform/MonitorThread.cpp.o CMakeFiles/serverplatform.dir/ServerPlatform/ServerMain.cpp.o CMakeFiles/serverplatform.dir/ServerPlatform/ServerService.cpp.o CMakeFiles/serverplatform.dir/ServerPlatform/ServerSignal.cpp.o CMakeFiles/serverplatform.dir/ServerPlatform/ServerThread.cpp.o
-/usr/bin/ranlib libserverplatform.a

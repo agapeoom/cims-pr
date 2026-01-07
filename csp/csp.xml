@@ -19,6 +19,8 @@
 		<UseRtpRelay>true</UseRtpRelay>
 		<BeginPort>10000</BeginPort>
 		<EndPort>12000</EndPort>
+		<CmpIp>127.0.0.1</CmpIp>
+		<CmpPort>9000</CmpPort>
 	</RtpRelay>
 	<Log>
 		<Folder>log</Folder>
@@ -26,9 +28,9 @@
 		<MaxSize>10000000</MaxSize>
 	</Log>
 	<XmlFolder>
-		<User>../config/UserXml</User>
-		<SipServer>../config/SipServerXml</SipServer>
-		<Group>../config/GroupXml</Group>
+		<User>../user</User>
+		<SipServer>../route</SipServer>
+		<Group>../group</Group>
 	</XmlFolder>
 	<Cdr>
 		<Folder>../log/cdr</Folder>

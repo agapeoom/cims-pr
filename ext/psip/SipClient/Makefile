@@ -8,17 +8,13 @@ include ../Makefile.mk
 
 INC=-I../SipUserAgent -I../SipStack -I../SipParser -I../SdpParser \
 	-I../XmlParser -I../SipPlatform $(OPENSSL_INC)
-LIB=-L../SipUserAgent -lsipuseragent \
-	-L../SipStack -lsipstack \
-	-L../SipParser -lsipparser \
-	-L../SdpParser -lsdpparser \
-	-L../XmlParser -lxmlparser \
-	-L../SipPlatform -lsipplatform \
-	$(OPENSSL_LIB) -lssl -lcrypto -lasound -lpthread
+LIB=-L/home/nex/work/cims/build/csp/psip_build \
+	-lsipuseragent -lsipstack -lsipparser -lsdpparser -lxmlparser -lsipplatform \
+	$(OPENSSL_LIB) -lssl -lcrypto -lpthread
 
 .SUFFIXES: .o .cpp
 %.o : %.cpp
-	$(CC) $(CFLAGS) -c $< $(INC)
+	$(CC) $(CFLAGS) -DNO_ALSA -c $< $(INC)
 
 all: SipClient.exe
 

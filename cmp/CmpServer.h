@@ -11,7 +11,7 @@
 
 class CmpServer : public PModule {
 public:
-    CmpServer(const std::string& name, int port);
+    CmpServer(const std::string& name);
     virtual ~CmpServer();
 
     bool startServer();
@@ -41,7 +41,6 @@ protected:
     void freeResource(PRtpTrans* rtp);
 
 private:
-    int _udpFd;
     int _udpFd;
     bool _running;
     

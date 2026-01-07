@@ -20,6 +20,7 @@
 #define _RTP_MAP_H_
 
 #include <map>
+#include <string>
 
 #include "SipMutex.h"
 #include "SipParserDefine.h"
@@ -35,6 +36,8 @@
 class CRtpInfo {
 public:
     CRtpInfo( uint8_t iSocketCount = SOCKET_COUNT_PER_MEDIA );
+    
+    std::string m_strSessionId;
 
     Socket *m_phSocket;
     uint32_t *m_piIp;

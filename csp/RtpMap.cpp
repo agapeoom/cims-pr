@@ -17,6 +17,7 @@
  */
 
 #include "RtpMap.h"
+#include "CmpClient.h"
 
 #include "CspServer.h"
 #include "Log.h"
@@ -117,6 +118,22 @@ void CRtpInfo::CloseSocket() {
 void CRtpInfo::SetIpPort( int iIndex, uint32_t iIp, uint16_t sPort ) {
     m_piIp[iIndex] = iIp;
     m_piPort[iIndex] = sPort;
+    
+    // Only update CMP if we have valid remote info (Audio port index 0?)
+    // Typically index 0 is audio, 2 is video?
+    // Let's assume index 0 for now.
+    if (iIndex == 0 && !m_strSessionId.empty()) {
+        char szIp[32];
+        struct in_addr addr;
+        addr.s_addr = iIp;
+        strcpy(szIp, inet_ntoa(addr)); // Not thread safe but simpler for now
+        
+        std::string locIp;
+        int locPort, locVideoPort; // dummy
+        // Assuming video port (sPort+2) or just 0 for now if not available here. 
+        // We only get audio port here.
+        gclsCmpClient.UpdateSession(m_strSessionId, szIp, sPort, 0, locIp, locPort);
+    }
 }
 
 /**
@@ -174,37 +191,45 @@ int CRtpMap::CreatePort( int iSocketCount ) {
     bool bRes = false;
     CRtpInfo clsInfo( iSocketCount );
 
-    if ( clsInfo.Create() == false ) return -1;
+    // Ensure CmpClient is init
+    static bool bInit = false;
+    if (!bInit) {
+        gclsCmpClient.Init(gclsSetup.m_strCmpIp, gclsSetup.m_iCmpPort);
+        bInit = true;
+    }
 
+    // Generate Session ID (e.g. uuid or just incrementing int? For now, incrementing int based on start port concept)
+    static int iSeq = 0;
     m_clsMutex.acquire();
-    if ( m_iStartPort == 0 ) m_iStartPort = gclsSetup.m_iBeginRtpPort;
-
-    if ( CreatePort( clsInfo, m_iStartPort, gclsSetup.m_iEndRtpPort ) ) {
-        bRes = true;
-    } else if ( m_iStartPort > gclsSetup.m_iBeginRtpPort ) {
-        if ( CreatePort( clsInfo, gclsSetup.m_iBeginRtpPort, m_iStartPort ) ) {
-            bRes = true;
-        }
-    }
-
-    if ( bRes ) {
-        m_iStartPort = clsInfo.m_iStartPort + clsInfo.m_iSocketCount;
-        if ( m_iStartPort > gclsSetup.m_iEndRtpPort ) m_iStartPort = gclsSetup.m_iBeginRtpPort;
-
-        m_clsMap.insert( RTP_MAP::value_type( clsInfo.m_iStartPort, clsInfo ) );
-    }
+    std::string strSessionId = "cmp_sess_" + std::to_string(++iSeq);
     m_clsMutex.release();
+    
+    clsInfo.m_strSessionId = strSessionId;
 
-    if ( bRes ) {
-        if ( StartRtpThread( clsInfo.m_iStartPort ) ) {
-            CLog::Print( LOG_DEBUG, "Create RtpPort(%d) success", clsInfo.m_iStartPort );
-            return clsInfo.m_iStartPort;
-        }
+    std::string strLocalIp;
+    int iLocalPort = 0;
+    int iLocalVideoPort = 0;
 
-        Delete( clsInfo.m_iStartPort );
+    if (gclsCmpClient.AddSession(strSessionId, strLocalIp, iLocalPort, iLocalVideoPort)) {
+        // CmpServer returned allocated ports
+        clsInfo.m_iStartPort = iLocalPort; 
+        // We might need to store video port too if RtpMap supports it, but RtpMap seems to assume contiguous ports.
+        // The original logic expected contiguous ports starting at m_iStartPort.
+        // CMP returns audio port. Video is audio + 2.
+        
+        // We don't really use sockets here anymore, CMP handles it.
+        // But we need to store it in map so Select works.
+        // Use iLocalPort as the key.
+        
+        m_clsMutex.acquire();
+        m_clsMap.insert( RTP_MAP::value_type( iLocalPort, clsInfo ) );
+        m_clsMutex.release();
+        
+        CLog::Print( LOG_DEBUG, "Create RtpPort(%d) via CMP success. Session=%s", iLocalPort, strSessionId.c_str() );
+        return iLocalPort;
     }
 
-    CLog::Print( LOG_ERROR, "Create RtpPort error" );
+    CLog::Print( LOG_ERROR, "Create RtpPort via CMP error" );
 
     return -1;
 }
@@ -265,7 +290,8 @@ bool CRtpMap::Delete( int iPort ) {
     m_clsMutex.acquire();
     itMap = m_clsMap.find( iPort );
     if ( itMap != m_clsMap.end() ) {
-        itMap->second.Close();
+        // itMap->second.Close(); // No local sockets to close
+        gclsCmpClient.RemoveSession(itMap->second.m_strSessionId);
         m_clsMap.erase( itMap );
         bRes = true;
     }

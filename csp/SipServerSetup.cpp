@@ -80,6 +80,8 @@ CSipServerSetup::CSipServerSetup()
       m_iLogLevel( 0 ),
       m_iLogMaxSize( 20000000 ),
       m_iMonitorPort( 6000 ),
+      m_strCmpIp( "127.0.0.1" ),
+      m_iCmpPort( 9000 ),
       m_iFileSize( 0 ) {
 }
 
@@ -220,6 +222,8 @@ bool CSipServerSetup::Read( CXmlElement &clsXml ) {
         pclsElement->SelectElementData( "UseRtpRelay", m_bUseRtpRelay );
         pclsElement->SelectElementData( "BeginPort", m_iBeginRtpPort );
         pclsElement->SelectElementData( "EndPort", m_iEndRtpPort );
+        pclsElement->SelectElementData( "CmpIp", m_strCmpIp );
+        pclsElement->SelectElementData( "CmpPort", m_iCmpPort );
     }
 
     // 모니터링

@@ -5,6 +5,7 @@
 #include "GroupMap.h"
 #include "Directory.h"
 #include "Log.h"
+#include "CmpClient.h"
 
 CGroupMap gclsGroupMap;
 
@@ -58,6 +59,8 @@ void CGroupMap::Insert( CXmlGroup &clsGroup ) {
     m_clsMutex.acquire();
     m_clsMap[clsGroup.m_strId] = clsGroup;
     m_clsMutex.release();
+
+    gclsCmpClient.AddGroup(clsGroup.m_strId);
 }
 
 /**

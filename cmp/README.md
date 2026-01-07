@@ -112,5 +112,7 @@ python3 cmp/verify_ptt.py <port> [--pcap <filename.pcap>]
 Example:
 ```bash
 python3 cmp/verify_ptt.py 9000 --pcap test.pcap
+python3 cmp/verify_ptt.py 9000 --pcap test2.pcap --no-cleanup
+
 ```
 > **Note:** PCAP capture requires `tcpdump` installed and sufficient privileges (e.g., `sudo` or `CAP_NET_RAW`).

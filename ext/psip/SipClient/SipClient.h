@@ -10,6 +10,9 @@ class CSipClient : public ISipUserAgentCallBack
 {
 public:
 	virtual ~CSipClient(){}
+	CSipClient() : m_bPttMode(false) {}
+	bool m_bPttMode;
+
 	virtual void EventRegister( CSipServerInfo * pclsInfo, int iStatus );
 	virtual void EventIncomingCall( const char * pszCallId, const char * pszFrom, const char * pszTo, CSipCallRtp * pclsRtp );
 	virtual void EventCallRing( const char * pszCallId, int iSipStatus, CSipCallRtp * pclsRtp );

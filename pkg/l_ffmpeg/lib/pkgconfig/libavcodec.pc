@@ -1,0 +1,14 @@
+prefix=/home/nex/work/cims/pkg/l_ffmpeg
+exec_prefix=${prefix}
+libdir=/home/nex/work/cims/pkg/l_ffmpeg/lib
+includedir=/home/nex/work/cims/pkg/l_ffmpeg/include
+
+Name: libavcodec
+Description: FFmpeg codec library
+Version: 58.91.100
+Requires: libswresample >= 3.7.100, libavutil >= 56.51.100
+Requires.private: 
+Conflicts:
+Libs: -L${libdir}  -lavcodec -pthread -lm -lopencore-amrwb -lopencore-amrnb -lvo-amrwbenc
+Libs.private: 
+Cflags: -I${includedir}

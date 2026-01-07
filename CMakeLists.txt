@@ -136,7 +136,7 @@ ExternalProject_Add(
    GIT_REPOSITORY  https://github.com/google/googletest.git
    GIT_TAG release-1.10.0
    INSTALL_DIR  ${GTEST_DIR} 
-   CMAKE_ARGS "-DCMAKE_INSTALL_PREFIX=${GTEST_DIR}"
+   CMAKE_ARGS "-DCMAKE_INSTALL_PREFIX=${GTEST_DIR}" "-DCMAKE_CXX_FLAGS=-w"
    SOURCE_DIR ${GTEST_DIR}/src
    BINARY_DIR ${GTEST_DIR}
 )
@@ -175,7 +175,7 @@ set(FFM_LIB_PATH ${FFM_DIR}/lib)
 set(FFM_INC
    "${FFM_DIR}/include"
 )
-set(FFM_PKG_PATH "${AMR_PKG_DIR}:${AMRWB_PKG_DIR}:${X264_DIR}")
+set(FFM_PKG_PATH "${AMR_PKG_DIR}/lib/pkgconfig:${AMRWB_PKG_DIR}/lib/pkgconfig:${X264_DIR}/lib/pkgconfig")
 
 
 set(FFM_LIB avformat avfilter avcodec avutil postproc swresample swscale bz2)
@@ -190,7 +190,7 @@ ExternalProject_Add(
 	  INSTALL_DIR  ${FFM_DIR}
 	  SOURCE_DIR ${FFM_DIR}/src
 	  BINARY_DIR ${FFM_DIR}
-	  CONFIGURE_COMMAND PATH=$ENV{PATH} PKG_CONFIG_PATH=${FFM_PKG_PATH} ${FFM_SRC}/configure --prefix=${FFM_DIR} --disable-shared --enable-static  --enable-version3 --enable-gpl --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libvo-amrwbenc --enable-libx264 --disable-amf --disable-audiotoolbox --disable-cuda-nvcc --disable-cuda-llvm --disable-cuvid --disable-d3d11va --disable-dxva2 --disable-ffnvcodec --disable-libdrm --disable-libmfx --disable-libnpp --disable-nvdec --disable-nvenc --disable-v4l2-m2m --disable-vaapi --disable-vdpau --disable-videotoolbox --disable-x86asm --enable-nonfree --enable-pthreads
+	  CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env "CFLAGS=-I${AMR_PKG_DIR}/include -I${AMRWB_PKG_DIR}/include" "LDFLAGS=-L${AMR_PKG_DIR}/lib -L${AMRWB_PKG_DIR}/lib" PATH=$ENV{PATH} ${FFM_SRC}/configure --prefix=${FFM_DIR} --disable-shared --enable-static  --enable-version3 --enable-gpl --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libvo-amrwbenc --disable-libx264 --disable-amf --disable-audiotoolbox --disable-cuda-nvcc --disable-cuda-llvm --disable-cuvid --disable-d3d11va --disable-dxva2 --disable-ffnvcodec --disable-libdrm --disable-libmfx --disable-libnpp --disable-nvdec --disable-nvenc --disable-v4l2-m2m --disable-vaapi --disable-vdpau --disable-videotoolbox --disable-x86asm --disable-asm --enable-nonfree --enable-pthreads
    INSTALL_COMMAND make install
 )
 
@@ -265,6 +265,52 @@ message("LINK_LIBRARIES( ${X264_LIB} ${AMTRTP_LIB} ${GTEST_LIB} ${PDK_LIB} ${PAL
 message (" 111 ${PMPROC_BIN_PATH}")
 #add_subdirectory(${PMPROC_DIR})
 add_subdirectory(cmp)
+add_subdirectory(csp)
+
+# --- Distribution Target ---
+add_custom_target(dist
+    COMMENT "Creating distribution package..."
+    
+    # 1. Create Directory Structure
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/dist/cmp/bin
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/dist/cmp/config
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/dist/cmp/cert
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/dist/cmp/log
+    
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/dist/csp/bin
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/dist/csp/config
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/dist/csp/cert
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/dist/csp/user
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/dist/csp/group
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/dist/csp/route
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/dist/csp/log
+    
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/dist/SipClient/bin
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/dist/SipClient/config
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/dist/SipClient/cert
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/dist/SipClient/log
+
+    # 2. Copy Binaries (Assuming they are in bin/ after build)
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/bin/cmp ${CMAKE_BINARY_DIR}/dist/cmp/bin/
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/bin/csp ${CMAKE_BINARY_DIR}/dist/csp/bin/
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/bin/SipClient ${CMAKE_BINARY_DIR}/dist/SipClient/bin/
+
+    # 3. Copy Configurations
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/cmp/cmp.conf ${CMAKE_BINARY_DIR}/dist/cmp/config/
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/csp/csp.xml ${CMAKE_BINARY_DIR}/dist/csp/config/
+    
+    # Copy CSP XML Resources to new locations
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/csp/GroupXml ${CMAKE_BINARY_DIR}/dist/csp/group
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/csp/UserXml ${CMAKE_BINARY_DIR}/dist/csp/user
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/csp/SipServerXml ${CMAKE_BINARY_DIR}/dist/csp/route
+
+    # 4. Copy Certificates
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/csp/csp.pem ${CMAKE_BINARY_DIR}/dist/csp/cert/
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/csp/csp.pem ${CMAKE_BINARY_DIR}/dist/SipClient/cert/
+    
+    # 5. Add README (Optional, can be created)
+    COMMAND ${CMAKE_COMMAND} -E echo "Distribution Package Created."
+)
 
 
 

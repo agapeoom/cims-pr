@@ -127,3 +127,67 @@ bool CRtpThread::Stop() {
 
   return true;
 }
+
+bool CRtpThread::SendFloorControl(int iOpCode) {
+    if (m_hSocket == INVALID_SOCKET) return false;
+
+    // Construct RTCP APP Packet
+    // Header (4 bytes) + SSRC (4 bytes) + Name (4 bytes) + Data (variable)
+    // RTCP Header: V=2, P=0, Subtype=1 (Floor), PT=204 (APP), Len
+    
+    uint8_t buffer[1024];
+    uint8_t *ptr = buffer;
+    
+    // 1. RTCP Header
+    // V=2(10), P=0, Subtype=1 (00001) -> 1000 0001 -> 0x81
+    *ptr++ = 0x81; 
+    *ptr++ = 204; // PT=APP
+    
+    // Length: (Length in 32-bit words) - 1. 
+    // Header(4) + SSRC(4) + Name(4) + Data(4) = 16 bytes = 4 words. Length = 3.
+    // Data is OpCode (1 byte) + Padding (3 bytes) ? 
+    // Let's stick to simplest: OpCode (Request=1, Release=4)
+    // Floor Control Protocol defined in CmpServer: 
+    // Subtype=1 (Floor), Name="MCPT", Data=[OpCode, ...]
+    
+    uint16_t len = 3; // 1(SSRC) + 1(Name) + 1(Data) = 3 words payload
+    *ptr++ = (len >> 8) & 0xFF;
+    *ptr++ = len & 0xFF;
+    
+    // 2. SSRC (Local) - just use random or 0x12345678
+    uint32_t ssrc = 0x12345678;
+    *ptr++ = (ssrc >> 24) & 0xFF;
+    *ptr++ = (ssrc >> 16) & 0xFF;
+    *ptr++ = (ssrc >> 8) & 0xFF;
+    *ptr++ = ssrc & 0xFF;
+    
+    // 3. Name (ASCII) "MCPT"
+    *ptr++ = 'M'; *ptr++ = 'C'; *ptr++ = 'P'; *ptr++ = 'T';
+    
+    // 4. Data (OpCode) + Padding
+    *ptr++ = (uint8_t)iOpCode;
+    *ptr++ = 0; *ptr++ = 0; *ptr++ = 0; // Padding to 32-bit boundary
+    
+    int packetLen = ptr - buffer;
+    
+    // Send to Dest IP/Port (RTCP port is RTP + 1 usually)
+    // But verify_ptt.py uses specific server port. 
+    // In SipClient, m_iDestPort is the remote audio port.
+    // CMP listens for RTCP on +1.
+    
+    // NOTE: CmpServer logic handles multiplexed or separate. Usually RTCP is Port+1.
+    
+    struct sockaddr_in startAddr;
+    memset(&startAddr, 0, sizeof(startAddr));
+    startAddr.sin_family = AF_INET;
+    startAddr.sin_addr.s_addr = inet_addr(m_strDestIp.c_str());
+    startAddr.sin_port = htons(m_iDestPort + 1); // RTCP Port
+    
+    int n = sendto(m_hSocket, (const char*)buffer, packetLen, 0, (struct sockaddr *)&startAddr, sizeof(startAddr));
+    if (n < 0) {
+        printf("SendFloorControl error: %s\n", strerror(errno));
+        return false;
+    }
+    
+    return true;
+}

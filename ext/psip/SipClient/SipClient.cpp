@@ -29,25 +29,41 @@ void CSipClient::EventIncomingCall( const char * pszCallId, const char * pszFrom
 		m_clsDestRtp = *pclsRtp;
 	}
 
-    // [DELAYED RESPONSE LOGIC]
-    // 1. Send 180 Ringing
-    clsUserAgent.RingCall( pszCallId, 180, NULL );
-    
-    // 2. Sleep 5 seconds
-    printf( "Sleeping 5 seconds...\n" );
-    sleep( 5 );
+    if (m_bPttMode) {
+        printf("[PTT] Auto-Answering Call...\n");
+        // Immediate 200 OK
+        CSipCallRtp clsLocalRtp;
+        clsLocalRtp.m_strIp = clsUserAgent.m_clsSipStack.m_clsSetup.m_strLocalIp;
+        clsLocalRtp.m_iPort = gclsRtpThread.m_iPort;
+        clsLocalRtp.m_iCodec = 0; // PCMU
 
-    // 3. Send 200 OK
-    CSipCallRtp clsLocalRtp;
-    clsLocalRtp.m_strIp = clsUserAgent.m_clsSipStack.m_clsSetup.m_strLocalIp;
-    clsLocalRtp.m_iPort = gclsRtpThread.m_iPort;
-    clsLocalRtp.m_iCodec = 0; // PCMU
+        clsUserAgent.AcceptCall( pszCallId, &clsLocalRtp );
 
-    clsUserAgent.AcceptCall( pszCallId, &clsLocalRtp );
+        if( pclsRtp )
+        {
+            gclsRtpThread.Start( pclsRtp->m_strIp.c_str(), pclsRtp->m_iPort );
+        }
+    } else {
+        // [DELAYED RESPONSE LOGIC for Call Mode]
+        // 1. Send 180 Ringing
+        clsUserAgent.RingCall( pszCallId, 180, NULL );
+        
+        // 2. Sleep 5 seconds
+        printf( "Sleeping 5 seconds...\n" );
+        sleep( 5 );
 
-    if( pclsRtp )
-    {
-        gclsRtpThread.Start( pclsRtp->m_strIp.c_str(), pclsRtp->m_iPort );
+        // 3. Send 200 OK
+        CSipCallRtp clsLocalRtp;
+        clsLocalRtp.m_strIp = clsUserAgent.m_clsSipStack.m_clsSetup.m_strLocalIp;
+        clsLocalRtp.m_iPort = gclsRtpThread.m_iPort;
+        clsLocalRtp.m_iCodec = 0; // PCMU
+
+        clsUserAgent.AcceptCall( pszCallId, &clsLocalRtp );
+
+        if( pclsRtp )
+        {
+            gclsRtpThread.Start( pclsRtp->m_strIp.c_str(), pclsRtp->m_iPort );
+        }
     }
 }
 

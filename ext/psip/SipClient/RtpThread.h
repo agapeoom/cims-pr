@@ -31,6 +31,8 @@ public:
 	bool Destroy( );
 	bool Start( const char * pszDestIp, int iDestPort );
 	bool Stop( );
+    
+    bool SendFloorControl(int iOpCode);
 
 	Socket	m_hSocket;
 	int			m_iPort;

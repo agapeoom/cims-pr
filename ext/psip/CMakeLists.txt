@@ -143,9 +143,9 @@ set(ALSA_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../alsa-lib-build/include)
 set(ALSA_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/../alsa-lib-build/lib/libasound.a)
 
 create_psip_app(SipClient         SipClient)
-target_include_directories(SipClient PRIVATE ${ALSA_INCLUDE_DIR})
-target_link_libraries(SipClient PRIVATE ${ALSA_LIBRARY})
-# target_compile_definitions(SipClient PRIVATE NO_ALSA) # ALSA enabled now
+# target_include_directories(SipClient PRIVATE ${ALSA_INCLUDE_DIR})
+# target_link_libraries(SipClient PRIVATE ${ALSA_LIBRARY})
+target_compile_definitions(SipClient PRIVATE NO_ALSA)
 create_psip_app(SipLoadBalancer   SipLoadBalancer)
 # create_psip_app(SipSend           SipSend/SipSend)
 # create_psip_app(SipSend           SipSend)     # MFC Application - Excluded

@@ -140,6 +140,11 @@ public:
     CStringMap m_clsMonitorIpMap;
 
     // ================================================================
+    // CMP 연동 설정
+    std::string m_strCmpIp;
+    int m_iCmpPort;
+
+    // ================================================================
     // 보안 기능
 
     /** SIP transaction list 에 저장하지 않을 SIP User Agent 맵 */

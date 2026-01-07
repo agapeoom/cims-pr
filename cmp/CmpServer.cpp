@@ -10,8 +10,8 @@
 #include <thread>
 #include <algorithm>
 
-CmpServer::CmpServer(const std::string& name, int port) 
-    : PModule(name), _port(port), _running(false), _udpFd(-1), _rtpStartPort(50000), _rtpPoolSize(100), _rtpIp("127.0.0.1")
+CmpServer::CmpServer(const std::string& name) 
+    : PModule(name), _running(false), _udpFd(-1), _rtpStartPort(50000), _rtpPoolSize(100), _rtpIp("127.0.0.1"), _serverIp("0.0.0.0"), _serverPort(9000)
 {
     loadConfig();
     initResourcePool();
@@ -47,8 +47,8 @@ bool CmpServer::startServer() {
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port = htons(_port);
+    addr.sin_addr.s_addr = inet_addr(_serverIp.c_str());
+    addr.sin_port = htons(_serverPort);
 
     if (bind(_udpFd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
         perror("bind");
@@ -416,24 +416,3 @@ void CmpServer::freeResource(PRtpTrans* rtp) {
     _freeResources.push_back(rtp);
 }
 
-int main(int argc, char** argv) {
-    if (argc < 2) {
-        printf("Usage: %s <port>\n", argv[0]);
-        return 1;
-    }
-
-    int port = atoi(argv[1]);
-    CmpServer server("CmpServer", port);
-
-    if (!server.startServer()) {
-        return 1;
-    }
-
-    printf("CmpServer started on port %d\n", port);
-    
-    // Keep main thread alive
-    while(true) {
-        msleep(1000);
-    }
-    return 0;
-}
