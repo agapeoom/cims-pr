@@ -132,14 +132,14 @@ install/strip/fast: preinstall/fast
 
 # The main all target
 all: cmake_check_build_system
-	cd /home/nex/work/cims && $(CMAKE_COMMAND) -E cmake_progress_start /home/nex/work/cims/CMakeFiles /home/nex/work/cims/ext/pasf/sample//CMakeFiles/progress.marks
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ext/pasf/sample/all
+	cd /home/nex/work/cims && $(CMAKE_COMMAND) -E cmake_progress_start /home/nex/work/cims/CMakeFiles /home/nex/work/cims/ext/pasf//CMakeFiles/progress.marks
+	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ext/pasf/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/nex/work/cims/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ext/pasf/sample/clean
+	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ext/pasf/clean
 .PHONY : clean
 
 # The main clean target
@@ -148,56 +148,18 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ext/pasf/sample/preinstall
+	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ext/pasf/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ext/pasf/sample/preinstall
+	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ext/pasf/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
 	cd /home/nex/work/cims && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
-
-# Convenience name for target.
-ext/pasf/sample/CMakeFiles/pasf_sample.dir/rule:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ext/pasf/sample/CMakeFiles/pasf_sample.dir/rule
-.PHONY : ext/pasf/sample/CMakeFiles/pasf_sample.dir/rule
-
-# Convenience name for target.
-pasf_sample: ext/pasf/sample/CMakeFiles/pasf_sample.dir/rule
-.PHONY : pasf_sample
-
-# fast build rule for target.
-pasf_sample/fast:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f ext/pasf/sample/CMakeFiles/pasf_sample.dir/build.make ext/pasf/sample/CMakeFiles/pasf_sample.dir/build
-.PHONY : pasf_sample/fast
-
-src/test.o: src/test.cpp.o
-.PHONY : src/test.o
-
-# target to build an object file
-src/test.cpp.o:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f ext/pasf/sample/CMakeFiles/pasf_sample.dir/build.make ext/pasf/sample/CMakeFiles/pasf_sample.dir/src/test.cpp.o
-.PHONY : src/test.cpp.o
-
-src/test.i: src/test.cpp.i
-.PHONY : src/test.i
-
-# target to preprocess a source file
-src/test.cpp.i:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f ext/pasf/sample/CMakeFiles/pasf_sample.dir/build.make ext/pasf/sample/CMakeFiles/pasf_sample.dir/src/test.cpp.i
-.PHONY : src/test.cpp.i
-
-src/test.s: src/test.cpp.s
-.PHONY : src/test.s
-
-# target to generate assembly for a file
-src/test.cpp.s:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f ext/pasf/sample/CMakeFiles/pasf_sample.dir/build.make ext/pasf/sample/CMakeFiles/pasf_sample.dir/src/test.cpp.s
-.PHONY : src/test.cpp.s
 
 # Help Target
 help:
@@ -211,10 +173,6 @@ help:
 	@echo "... install/strip"
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
-	@echo "... pasf_sample"
-	@echo "... src/test.o"
-	@echo "... src/test.i"
-	@echo "... src/test.s"
 .PHONY : help
 
 

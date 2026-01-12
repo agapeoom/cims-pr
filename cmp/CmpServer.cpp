@@ -10,8 +10,8 @@
 #include <thread>
 #include <algorithm>
 
-CmpServer::CmpServer(const std::string& name) 
-    : PModule(name), _running(false), _udpFd(-1), _rtpStartPort(50000), _rtpPoolSize(100), _rtpIp("127.0.0.1"), _serverIp("0.0.0.0"), _serverPort(9000)
+CmpServer::CmpServer(const std::string& name, const std::string& configFile)
+    : PModule(name), _running(false), _udpFd(-1), _configFile(configFile), _cspPort(0)
 {
     loadConfig();
     initResourcePool();
@@ -337,7 +337,7 @@ void CmpServer::sendResponse(const std::string& ip, int port, const std::string&
 }
 
 void CmpServer::loadConfig() {
-    FILE* fp = fopen("cmp.conf", "r");
+    FILE* fp = fopen(_configFile.c_str(), "r");
     if (fp) {
         char line[256];
         while (fgets(line, sizeof(line), fp)) {
@@ -348,12 +348,14 @@ void CmpServer::loadConfig() {
                 if (strcmp(key, "RtpIp") == 0) _rtpIp = val;
                 if (strcmp(key, "ServerIp") == 0) _serverIp = val;
                 if (strcmp(key, "ServerPort") == 0) _serverPort = atoi(val);
+                if (strcmp(key, "CspIp") == 0) _cspIp = val;
+                if (strcmp(key, "CspPort") == 0) _cspPort = atoi(val);
             }
         }
         fclose(fp);
     }
-    printf("Config: RtpStartPort=%d, RtpPoolSize=%d, RtpIp=%s, ServerIp=%s, ServerPort=%d\n", 
-           _rtpStartPort, _rtpPoolSize, _rtpIp.c_str(), _serverIp.c_str(), _serverPort);
+    printf("Config: RtpStartPort=%d, RtpPoolSize=%d, RtpIp=%s, ServerIp=%s, ServerPort=%d, CspIp=%s, CspPort=%d\n", 
+           _rtpStartPort, _rtpPoolSize, _rtpIp.c_str(), _serverIp.c_str(), _serverPort, _cspIp.c_str(), _cspPort);
 }
 
 void CmpServer::initResourcePool() {

@@ -82,6 +82,7 @@ CSipServerSetup::CSipServerSetup()
       m_iMonitorPort( 6000 ),
       m_strCmpIp( "127.0.0.1" ),
       m_iCmpPort( 9000 ),
+      m_iLocalCmpPort( 9001 ),
       m_iFileSize( 0 ) {
 }
 
@@ -224,6 +225,7 @@ bool CSipServerSetup::Read( CXmlElement &clsXml ) {
         pclsElement->SelectElementData( "EndPort", m_iEndRtpPort );
         pclsElement->SelectElementData( "CmpIp", m_strCmpIp );
         pclsElement->SelectElementData( "CmpPort", m_iCmpPort );
+        pclsElement->SelectElementData( "LocalCmpPort", m_iLocalCmpPort );
     }
 
     // 모니터링

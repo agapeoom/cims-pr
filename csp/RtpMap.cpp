@@ -194,7 +194,7 @@ int CRtpMap::CreatePort( int iSocketCount ) {
     // Ensure CmpClient is init
     static bool bInit = false;
     if (!bInit) {
-        gclsCmpClient.Init(gclsSetup.m_strCmpIp, gclsSetup.m_iCmpPort);
+        gclsCmpClient.Init(gclsSetup.m_strCmpIp, gclsSetup.m_iCmpPort, gclsSetup.m_iLocalCmpPort);
         bInit = true;
     }
 

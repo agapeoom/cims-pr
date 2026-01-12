@@ -267,6 +267,7 @@ message (" 111 ${PMPROC_BIN_PATH}")
 #add_subdirectory(${PMPROC_DIR})
 add_subdirectory(cmp)
 add_subdirectory(csp)
+add_subdirectory(cspsim)
 
 # --- Distribution Target ---
 add_custom_target(dist
@@ -295,6 +296,7 @@ add_custom_target(dist
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/bin/cmp ${CMAKE_BINARY_DIR}/dist/cmp/bin/
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/bin/csp ${CMAKE_BINARY_DIR}/dist/csp/bin/
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/bin/SipClient ${CMAKE_BINARY_DIR}/dist/SipClient/bin/
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/csp/csp.sh ${CMAKE_BINARY_DIR}/dist/csp/bin/
 
     # 3. Copy Configurations
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/cmp/cmp.conf ${CMAKE_BINARY_DIR}/dist/cmp/config/
@@ -311,6 +313,25 @@ add_custom_target(dist
     
     # 5. Add README (Optional, can be created)
     COMMAND ${CMAKE_COMMAND} -E echo "Distribution Package Created."
+
+    # cspsim Distribution (Integrated into dist)
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/dist/cspsim/bin
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/dist/cspsim/log
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/bin/cspsim ${CMAKE_BINARY_DIR}/dist/cspsim/bin/
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/cspsim/SipClient.xml ${CMAKE_BINARY_DIR}/dist/cspsim/bin/
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/cspsim/SipClientCaller.xml ${CMAKE_BINARY_DIR}/dist/cspsim/bin/
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/cspsim/SipServer.pem ${CMAKE_BINARY_DIR}/dist/cspsim/bin/
+)
+
+# Independent cspsim distribution target
+add_custom_target(dist_cspsim
+    COMMENT "Creating cspsim distribution package..."
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/dist/cspsim/bin
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/dist/cspsim/log
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/bin/cspsim ${CMAKE_BINARY_DIR}/dist/cspsim/bin/
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/cspsim/SipClient.xml ${CMAKE_BINARY_DIR}/dist/cspsim/bin/
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/cspsim/SipClientCaller.xml ${CMAKE_BINARY_DIR}/dist/cspsim/bin/
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/cspsim/SipServer.pem ${CMAKE_BINARY_DIR}/dist/cspsim/bin/
 )
 
 

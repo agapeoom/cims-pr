@@ -3,7 +3,11 @@
 #include "CmpServer.h"
 
 int main(int argc, char** argv) {
-    CmpServer server("CmpServer");
+    std::string configFile = "cmp.conf";
+    if (argc > 1) {
+        configFile = argv[1];
+    }
+    CmpServer server("cmp", configFile);
 
     if (!server.startServer()) {
         return 1;
@@ -13,7 +17,7 @@ int main(int argc, char** argv) {
     // We can't access server member unless we make getPort(). 
     // Or just print "Started" without port here, relying on startServer logging or config.
     // Better yet, update startServer to print.
-    printf("CmpServer started.\n");
+    printf("cmp started.\n");
     
     // Keep main thread alive
     while(true) {

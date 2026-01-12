@@ -71,7 +71,7 @@ int ServiceMain() {
     clsSetup.m_strCertFile = gclsSetup.m_strCertFile;
     clsSetup.m_strCaCertFile = gclsSetup.m_strCaCertFile;
 
-    clsSetup.m_strUserAgent = "CspServer_";
+    clsSetup.m_strUserAgent = "csp_";
     clsSetup.m_strUserAgent.append( CSP_SERVER_VERSION );
     clsSetup.m_iStackExecutePeriod = gclsSetup.m_iStackExecutePeriod;
     clsSetup.m_iTimerD = gclsSetup.m_iTimerD;
@@ -87,7 +87,7 @@ int ServiceMain() {
         printf( "Loading GroupMap from %s...\n", gclsSetup.m_strGroupXmlFolder.c_str() );
         gclsGroupMap.Load( gclsSetup.m_strGroupXmlFolder.c_str() );
     }
-    printf( "Starting SipServer...\n" );
+    printf( "Starting csp...\n" );
     if ( gclsSipServer.Start( clsSetup ) == false ) {
         CLog::Print( LOG_ERROR, "SipServer start error" );
         printf( "SipServer start error (check logs/permissions/ports)\n" );

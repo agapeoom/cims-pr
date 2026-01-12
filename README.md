@@ -23,27 +23,27 @@ Ensure the following tools are installed on your build server:
    cd cims
    ```
 
-2. **Create a build directory**
+2. **Create a build directory** (build 디렉토리 내에서 빌드)
    It is recommended to do an out-of-source build.
    ```bash
    mkdir build
    cd build
    ```
 
-3. **Configure the project**
+3. **Configure the project**(build 디렉토리 내에서 빌드)
    Run cmake to generate the makefiles. This step configures the external projects but does not yet build them.
    ```bash
    cmake ..
    ```
 
-4. **Build**
+4. **Build**(build 디렉토리 내에서 빌드)
    Run make to start the build process. This will automatically download and compile the external dependencies (FFmpeg, etc.) before building the main project.
    ```bash
    make -j$(nproc)
    ```
    *(Note: The first build may take some time as it downloads and compiles external libraries.)*
 
-## Deployment
+## Deployment (build 디렉토리 내 배포용 디렉토리 생성 및 복사)
 After a successful build, a distribution package can be created using the `dist` target:
 ```bash
 make dist

@@ -21,7 +21,7 @@ CCmpClient& CCmpClient::GetInstance() {
     return instance;
 }
 
-bool CCmpClient::Init(const std::string& strCmpIp, int iCmpPort) {
+bool CCmpClient::Init(const std::string& strCmpIp, int iCmpPort, int iLocalPort) {
     std::lock_guard<std::mutex> lock(m_mutex);
     m_strCmpIp = strCmpIp;
     m_iCmpPort = iCmpPort;
@@ -31,6 +31,21 @@ bool CCmpClient::Init(const std::string& strCmpIp, int iCmpPort) {
         if (m_iSocket < 0) {
             CLog::Print(LOG_ERROR, "CmpClient::Init socket error");
             return false;
+        }
+
+        struct sockaddr_in localAddr;
+        memset(&localAddr, 0, sizeof(localAddr));
+        localAddr.sin_family = AF_INET;
+        localAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+        localAddr.sin_port = htons(iLocalPort);
+
+        if (bind(m_iSocket, (struct sockaddr*)&localAddr, sizeof(localAddr)) < 0) {
+             CLog::Print(LOG_ERROR, "CmpClient::Init bind error port=%d", iLocalPort);
+             // Don't return false, maybe we can still send? But receive will fail.
+             // Let's log error but continue for now? No, binding is important for bidirectional.
+             close(m_iSocket);
+             m_iSocket = -1;
+             return false;
         }
         
         // Set timeout

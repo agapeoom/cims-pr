@@ -10,7 +10,7 @@ class CCmpClient {
 public:
     static CCmpClient& GetInstance();
 
-    bool Init(const std::string& strCmpIp, int iCmpPort);
+    bool Init(const std::string& strCmpIp, int iCmpPort, int iLocalPort);
     
     // Returns assigned local IP/Port from CMP
     bool AddSession(const std::string& strSessionId, std::string& strLocalIp, int& iLocalPort, int& iLocalVideoPort);

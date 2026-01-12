@@ -11,7 +11,7 @@
 
 class CmpServer : public PModule {
 public:
-    CmpServer(const std::string& name);
+    CmpServer(const std::string& name, const std::string& configFile = "cmp.conf");
     virtual ~CmpServer();
 
     bool startServer();
@@ -56,6 +56,10 @@ private:
     // Server Config
     std::string _serverIp;
     int _serverPort;
+    std::string _configFile;
+
+    std::string _cspIp;
+    int _cspPort;
 
     std::vector<PRtpTrans*> _resourcePool; // Pre-allocated list
     std::vector<PRtpTrans*> _freeResources; // Available for use

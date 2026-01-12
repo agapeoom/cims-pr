@@ -21,6 +21,7 @@
 		<EndPort>12000</EndPort>
 		<CmpIp>127.0.0.1</CmpIp>
 		<CmpPort>9000</CmpPort>
+		<LocalCmpPort>9001</LocalCmpPort>
 	</RtpRelay>
 	<Log>
 		<Folder>log</Folder>

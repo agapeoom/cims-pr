@@ -132,14 +132,14 @@ install/strip/fast: preinstall/fast
 
 # The main all target
 all: cmake_check_build_system
-	cd /home/nex/work/cims && $(CMAKE_COMMAND) -E cmake_progress_start /home/nex/work/cims/CMakeFiles /home/nex/work/cims/ext/pasf/sample//CMakeFiles/progress.marks
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ext/pasf/sample/all
+	cd /home/nex/work/cims && $(CMAKE_COMMAND) -E cmake_progress_start /home/nex/work/cims/CMakeFiles /home/nex/work/cims/cmp//CMakeFiles/progress.marks
+	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 cmp/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/nex/work/cims/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ext/pasf/sample/clean
+	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 cmp/clean
 .PHONY : clean
 
 # The main clean target
@@ -148,12 +148,12 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ext/pasf/sample/preinstall
+	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 cmp/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ext/pasf/sample/preinstall
+	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 cmp/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
@@ -162,42 +162,114 @@ depend:
 .PHONY : depend
 
 # Convenience name for target.
-ext/pasf/sample/CMakeFiles/pasf_sample.dir/rule:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ext/pasf/sample/CMakeFiles/pasf_sample.dir/rule
-.PHONY : ext/pasf/sample/CMakeFiles/pasf_sample.dir/rule
+cmp/CMakeFiles/cmp.dir/rule:
+	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 cmp/CMakeFiles/cmp.dir/rule
+.PHONY : cmp/CMakeFiles/cmp.dir/rule
 
 # Convenience name for target.
-pasf_sample: ext/pasf/sample/CMakeFiles/pasf_sample.dir/rule
-.PHONY : pasf_sample
+cmp: cmp/CMakeFiles/cmp.dir/rule
+.PHONY : cmp
 
 # fast build rule for target.
-pasf_sample/fast:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f ext/pasf/sample/CMakeFiles/pasf_sample.dir/build.make ext/pasf/sample/CMakeFiles/pasf_sample.dir/build
-.PHONY : pasf_sample/fast
+cmp/fast:
+	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f cmp/CMakeFiles/cmp.dir/build.make cmp/CMakeFiles/cmp.dir/build
+.PHONY : cmp/fast
 
-src/test.o: src/test.cpp.o
-.PHONY : src/test.o
+CmpMain.o: CmpMain.cpp.o
+.PHONY : CmpMain.o
 
 # target to build an object file
-src/test.cpp.o:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f ext/pasf/sample/CMakeFiles/pasf_sample.dir/build.make ext/pasf/sample/CMakeFiles/pasf_sample.dir/src/test.cpp.o
-.PHONY : src/test.cpp.o
+CmpMain.cpp.o:
+	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f cmp/CMakeFiles/cmp.dir/build.make cmp/CMakeFiles/cmp.dir/CmpMain.cpp.o
+.PHONY : CmpMain.cpp.o
 
-src/test.i: src/test.cpp.i
-.PHONY : src/test.i
+CmpMain.i: CmpMain.cpp.i
+.PHONY : CmpMain.i
 
 # target to preprocess a source file
-src/test.cpp.i:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f ext/pasf/sample/CMakeFiles/pasf_sample.dir/build.make ext/pasf/sample/CMakeFiles/pasf_sample.dir/src/test.cpp.i
-.PHONY : src/test.cpp.i
+CmpMain.cpp.i:
+	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f cmp/CMakeFiles/cmp.dir/build.make cmp/CMakeFiles/cmp.dir/CmpMain.cpp.i
+.PHONY : CmpMain.cpp.i
 
-src/test.s: src/test.cpp.s
-.PHONY : src/test.s
+CmpMain.s: CmpMain.cpp.s
+.PHONY : CmpMain.s
 
 # target to generate assembly for a file
-src/test.cpp.s:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f ext/pasf/sample/CMakeFiles/pasf_sample.dir/build.make ext/pasf/sample/CMakeFiles/pasf_sample.dir/src/test.cpp.s
-.PHONY : src/test.cpp.s
+CmpMain.cpp.s:
+	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f cmp/CMakeFiles/cmp.dir/build.make cmp/CMakeFiles/cmp.dir/CmpMain.cpp.s
+.PHONY : CmpMain.cpp.s
+
+CmpServer.o: CmpServer.cpp.o
+.PHONY : CmpServer.o
+
+# target to build an object file
+CmpServer.cpp.o:
+	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f cmp/CMakeFiles/cmp.dir/build.make cmp/CMakeFiles/cmp.dir/CmpServer.cpp.o
+.PHONY : CmpServer.cpp.o
+
+CmpServer.i: CmpServer.cpp.i
+.PHONY : CmpServer.i
+
+# target to preprocess a source file
+CmpServer.cpp.i:
+	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f cmp/CMakeFiles/cmp.dir/build.make cmp/CMakeFiles/cmp.dir/CmpServer.cpp.i
+.PHONY : CmpServer.cpp.i
+
+CmpServer.s: CmpServer.cpp.s
+.PHONY : CmpServer.s
+
+# target to generate assembly for a file
+CmpServer.cpp.s:
+	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f cmp/CMakeFiles/cmp.dir/build.make cmp/CMakeFiles/cmp.dir/CmpServer.cpp.s
+.PHONY : CmpServer.cpp.s
+
+McpttGroup.o: McpttGroup.cpp.o
+.PHONY : McpttGroup.o
+
+# target to build an object file
+McpttGroup.cpp.o:
+	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f cmp/CMakeFiles/cmp.dir/build.make cmp/CMakeFiles/cmp.dir/McpttGroup.cpp.o
+.PHONY : McpttGroup.cpp.o
+
+McpttGroup.i: McpttGroup.cpp.i
+.PHONY : McpttGroup.i
+
+# target to preprocess a source file
+McpttGroup.cpp.i:
+	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f cmp/CMakeFiles/cmp.dir/build.make cmp/CMakeFiles/cmp.dir/McpttGroup.cpp.i
+.PHONY : McpttGroup.cpp.i
+
+McpttGroup.s: McpttGroup.cpp.s
+.PHONY : McpttGroup.s
+
+# target to generate assembly for a file
+McpttGroup.cpp.s:
+	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f cmp/CMakeFiles/cmp.dir/build.make cmp/CMakeFiles/cmp.dir/McpttGroup.cpp.s
+.PHONY : McpttGroup.cpp.s
+
+PRtpHandler.o: PRtpHandler.cpp.o
+.PHONY : PRtpHandler.o
+
+# target to build an object file
+PRtpHandler.cpp.o:
+	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f cmp/CMakeFiles/cmp.dir/build.make cmp/CMakeFiles/cmp.dir/PRtpHandler.cpp.o
+.PHONY : PRtpHandler.cpp.o
+
+PRtpHandler.i: PRtpHandler.cpp.i
+.PHONY : PRtpHandler.i
+
+# target to preprocess a source file
+PRtpHandler.cpp.i:
+	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f cmp/CMakeFiles/cmp.dir/build.make cmp/CMakeFiles/cmp.dir/PRtpHandler.cpp.i
+.PHONY : PRtpHandler.cpp.i
+
+PRtpHandler.s: PRtpHandler.cpp.s
+.PHONY : PRtpHandler.s
+
+# target to generate assembly for a file
+PRtpHandler.cpp.s:
+	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f cmp/CMakeFiles/cmp.dir/build.make cmp/CMakeFiles/cmp.dir/PRtpHandler.cpp.s
+.PHONY : PRtpHandler.cpp.s
 
 # Help Target
 help:
@@ -211,10 +283,19 @@ help:
 	@echo "... install/strip"
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
-	@echo "... pasf_sample"
-	@echo "... src/test.o"
-	@echo "... src/test.i"
-	@echo "... src/test.s"
+	@echo "... cmp"
+	@echo "... CmpMain.o"
+	@echo "... CmpMain.i"
+	@echo "... CmpMain.s"
+	@echo "... CmpServer.o"
+	@echo "... CmpServer.i"
+	@echo "... CmpServer.s"
+	@echo "... McpttGroup.o"
+	@echo "... McpttGroup.i"
+	@echo "... McpttGroup.s"
+	@echo "... PRtpHandler.o"
+	@echo "... PRtpHandler.i"
+	@echo "... PRtpHandler.s"
 .PHONY : help
 
 

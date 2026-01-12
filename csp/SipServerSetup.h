@@ -143,6 +143,7 @@ public:
     // CMP 연동 설정
     std::string m_strCmpIp;
     int m_iCmpPort;
+    int m_iLocalCmpPort; // Local port to receive CMP messages
 
     // ================================================================
     // 보안 기능
