@@ -193,6 +193,10 @@ public:
   void sendRtp(char* data, int len);
   void sendVideoRtp(char* data, int len);
 
+  // [Shared Session Support]
+  void sendTo(const std::string& ip, int port, char* data, int len);
+  void sendVideoTo(const std::string& ip, int port, char* data, int len);
+
   bool proc(); 
   bool proc(int id, const std::string & name, PEvent::Ptr spEvent);
 

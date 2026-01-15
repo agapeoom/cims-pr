@@ -394,6 +394,14 @@ void CSipServer::EventCallStart( const char *pszCallId, CSipCallRtp *pclsRtp ) {
                  printf("[DEBUG] EventCallStart Fix: FAILED to find RtpInfo for port %d (or %d)\n", clsCallInfo.m_iPeerRtpPort, clsCallInfo.m_iPeerRtpPort - 2);
             }
             
+            // [GROUP CALL FIX] Notify Service independent of RtpMap existence (Shared Session Support)
+            int iRemoteAudio = pclsRtp->GetAudioPort();
+            if (iRemoteAudio <= 0 && pclsRtp->m_iPort > 0) iRemoteAudio = pclsRtp->m_iPort;
+            
+            if (iRemoteAudio > 0) {
+                gclsGroupCallService.OnCallStarted(pszCallId, pclsRtp->m_strIp, iRemoteAudio);
+            }
+            
             std::string strRelayIp = gclsSetup.m_strLocalIp;
             if (!strAllocatedIp.empty()) {
                 strRelayIp = strAllocatedIp;
@@ -455,9 +463,14 @@ void CSipServer::EventCallEnd( const char *pszCallId, int iSipStatus ) {
         gclsUserAgent.StopCall( clsCallInfo.m_strPeerCallId.c_str() );
         
         // [GROUP CALL RECOVERY]
-        gclsGroupCallService.OnCallTerminated( pszCallId );
+        // OnCallTerminated returns true if it handled cleanup (Group Call). 
+        // If true, we keep the port (handled by GroupService ref/shared logic).
+        // Wait, for Shared Session, we NEVER delete the port via CallMap.
+        // GroupService manages it.
+        // So if OnCallTerminated returns true, we pass FALSE to bStopPort.
+        bool bIsGroup = gclsGroupCallService.OnCallTerminated( pszCallId );
         
-        gclsCallMap.Delete( pszCallId );
+        gclsCallMap.Delete( pszCallId, !bIsGroup );
     } else {
         std::string strCallId;
 

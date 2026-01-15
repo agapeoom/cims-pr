@@ -26,9 +26,11 @@ public:
     bool UpdateSession(const std::string& strSessionId, const std::string& strRmtIp, int iRmtPort, int iRmtVideoPort, int iPeerIdx, std::string& strLocalIp, int& iLocalPort);
     bool RemoveSession(const std::string& strSessionId);
 
-    bool AddGroup(const std::string& strGroupId);
-    bool JoinGroup(const std::string& strGroupId, const std::string& strSessionId);
+
+    bool AddGroup(const std::string& strGroupId, std::string& strIp, int& iPort);
+    bool JoinGroup(const std::string& strGroupId, const std::string& strSessionId, const std::string& strIp, int iPort);
     bool LeaveGroup(const std::string& strGroupId, const std::string& strSessionId);
+    bool RemoveGroup(const std::string& strGroupId);
 
 private:
     CCmpClient();

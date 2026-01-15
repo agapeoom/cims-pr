@@ -247,15 +247,45 @@ void CmpServer::processAddGroup(const std::vector<std::string>& tokens, const st
     
     PAutoLock lock(_mutex);
     if (_groups.find(groupId) != _groups.end()) {
-        sendResponse(ip, port, header + " OK");
-        printf("[ADD_GROUP] ID=%s (Already exists)\n", groupId.c_str());
-        return;
+        PRtpTrans* rtp = _sessions[groupId]; // Should exist if group exists
+        if (rtp) {
+             std::string locIp = _rtpIp;
+             int locPort = rtp->getLocalPort();
+             std::string resp = header + " OK " + locIp + " " + std::to_string(locPort);
+             sendResponse(ip, port, resp);
+             return;
+        }
+        // If Logic broken (Group exists, RTP missing), re-create?
     }
     
+    std::string locIp = _rtpIp;
+    int locPort = 0;
+    int locVideoPort = 0;
+    
+    // Allocate Shared RTP Session for Group
+    PRtpTrans* rtp = allocResource(locIp, locPort, locVideoPort);
+    if (!rtp) {
+        sendResponse(ip, port, header + " ERROR: No resources");
+        return;
+    }
+    rtp->setSessionId(groupId);
+    _sessions[groupId] = rtp;
+
+    static int workerIdx = 0;
+    std::string wname = formatStr("RtpWorker_%d", workerIdx++ % 4);
+    rtp->setWorkerName(wname);
+    
     McpttGroup* group = new McpttGroup(groupId);
+    group->setSharedSession(rtp);
+    rtp->setGroup(group);
+    
+    addHandler(wname, rtp);
+    
     _groups[groupId] = group;
-    sendResponse(ip, port, header + " OK");
-    printf("[ADD_GROUP] ID=%s\n", groupId.c_str());
+    
+    std::string resp = header + " OK " + locIp + " " + std::to_string(locPort);
+    sendResponse(ip, port, resp);
+    printf("[ADD_GROUP] ID=%s SharedPort=%d Worker=%s\n", groupId.c_str(), locPort, wname.c_str());
 }
 
 void CmpServer::processRemoveGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header) {
@@ -265,8 +295,20 @@ void CmpServer::processRemoveGroup(const std::vector<std::string>& tokens, const
     PAutoLock lock(_mutex);
     auto it = _groups.find(groupId);
     if (it != _groups.end()) {
-        delete it->second;
+        McpttGroup* group = it->second;
+        delete group;
         _groups.erase(it);
+        
+        // Remove Shared Session
+        auto itSess = _sessions.find(groupId);
+        if (itSess != _sessions.end()) {
+            PRtpTrans* rtp = itSess->second;
+            delHandler(rtp->getWorkerName(), rtp);
+            rtp->reset();
+            freeResource(rtp);
+            _sessions.erase(itSess);
+        }
+
         sendResponse(ip, port, header + " OK");
         printf("[REMOVE_GROUP] ID=%s\n", groupId.c_str());
     } else {
@@ -275,34 +317,24 @@ void CmpServer::processRemoveGroup(const std::vector<std::string>& tokens, const
 }
 
 void CmpServer::processJoinGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header) {
-    if (tokens.size() < 8) return;
+    if (tokens.size() < 10) return; // groupId, sessionId, userIp, userPort
     std::string groupId = tokens[6];
     std::string sessionId = tokens[7];
+    std::string userIp = tokens[8];
+    int userPort = std::stoi(tokens[9]);
     
     PAutoLock lock(_mutex);
     auto groupIt = _groups.find(groupId);
-    auto sessionIt = _sessions.find(sessionId);
     
-    if (groupIt != _groups.end() && groupIt->second->hasMember(sessionId)) {
-        sendResponse(ip, port, header + " OK");
-        printf("[JOIN_GROUP] Group=%s Session=%s (Already joined)\n", groupId.c_str(), sessionId.c_str());
-        return;
-    }
-
     if (groupIt == _groups.end()) {
         sendResponse(ip, port, header + " ERROR: Group not found");
         return;
     }
-    if (sessionIt == _sessions.end()) {
-        sendResponse(ip, port, header + " ERROR: Session not found");
-        return;
-    }
     
-    groupIt->second->addMember(sessionId, sessionIt->second);
-    sessionIt->second->setGroup(groupIt->second);
+    groupIt->second->addMember(sessionId, userIp, userPort);
     
     sendResponse(ip, port, header + " OK");
-    printf("[JOIN_GROUP] Group=%s Session=%s\n", groupId.c_str(), sessionId.c_str());
+    printf("[JOIN_GROUP] Group=%s Session=%s Peer=%s:%d\n", groupId.c_str(), sessionId.c_str(), userIp.c_str(), userPort);
 }
 
 void CmpServer::processLeaveGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header) {
@@ -312,21 +344,16 @@ void CmpServer::processLeaveGroup(const std::vector<std::string>& tokens, const 
     
     PAutoLock lock(_mutex);
     auto groupIt = _groups.find(groupId);
-    auto sessionIt = _sessions.find(sessionId);
-    
-    if (groupIt == _groups.end()) {
+    if (groupIt != _groups.end()) {
+        groupIt->second->removeMember(sessionId);
+        sendResponse(ip, port, header + " OK");
+        printf("[LEAVE_GROUP] Group=%s Session=%s\n", groupId.c_str(), sessionId.c_str());
+    } else {
         sendResponse(ip, port, header + " ERROR: Group not found");
-        return;
     }
-    
-    groupIt->second->removeMember(sessionId);
-    if (sessionIt != _sessions.end()) {
-        sessionIt->second->setGroup(NULL);
-    }
-    
-    sendResponse(ip, port, header + " OK");
-    printf("[LEAVE_GROUP] Group=%s Session=%s\n", groupId.c_str(), sessionId.c_str());
 }
+    
+
 
 void CmpServer::sendResponse(const std::string& ip, int port, const std::string& msg) {
     // Send back to origin (which is CSP Port)

@@ -27,7 +27,8 @@ uname -v = #37~24.04.1-Ubuntu SMP PREEMPT_DYNAMIC Thu Nov 20 10:25:38 UTC 2
 /usr/bin/oslevel       = unknown
 /bin/universe          = unknown
 
-PATH: /home/nex/.antigravity-server/bin/94f91bc110994badc7c086033db813077a5226af/bin/remote-cli
+PATH: /home/nex/.antigravity-server/bin/450b6b28083d737992adc5d19637f22c95ffba7b/bin/remote-cli
+PATH: /home/nex/.nvm/versions/node/v24.12.0/bin
 PATH: /usr/local/sbin
 PATH: /usr/local/bin
 PATH: /usr/sbin
@@ -37,6 +38,7 @@ PATH: /bin
 PATH: /usr/games
 PATH: /usr/local/games
 PATH: /snap/bin
+PATH: /home/nex/.antigravity-server/extensions/ms-python.debugpy-2025.18.0-linux-x64/bundled/scripts/noConfigScripts
 
 
 ## ----------- ##

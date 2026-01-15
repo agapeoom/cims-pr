@@ -42,7 +42,8 @@ public:
     McpttGroup(const std::string& groupId);
     virtual ~McpttGroup();
 
-    void addMember(const std::string& sessionId, PRtpTrans* session);
+    void setSharedSession(PRtpTrans* session);
+    void addMember(const std::string& sessionId, const std::string& ip, int port);
     void removeMember(const std::string& sessionId);
     bool hasMember(const std::string& sessionId);
 
@@ -51,21 +52,28 @@ public:
     void handleFloorRelease(const std::string& sessionId, unsigned int userId);
 
     // Called by PRtpTrans when an RTCP packet is received
-    void onRtcpPacket(const std::string& sessionId, char* buf, int len);
+    void onRtcpPacket(const std::string& ip, int port, char* buf, int len);
 
     // Called by PRtpTrans when an RTP packet is received
-    void onRtpPacket(const std::string& sessionId, char* buf, int len);
+    void onRtpPacket(const std::string& ip, int port, char* buf, int len);
 
     // Called by PRtpTrans when a Video RTP packet is received
-    void onVideoRtpPacket(const std::string& sessionId, char* buf, int len);
+    void onVideoRtpPacket(const std::string& ip, int port, char* buf, int len);
 
 private:
-    void sendToAll(const char* data, int len);
+    void sendToAll(const char* data, int len, const std::string& excludeIp, int excludePort);
     void sendToMember(const std::string& sessionId, const char* data, int len);
     void broadcastFloorStatus(unsigned char opcode, unsigned int userId);
 
     std::string _groupId;
-    std::map<std::string, PRtpTrans*> _members; // SessionID -> Session
+    
+    struct Peer {
+        std::string id;
+        std::string ip;
+        int port;
+    };
+    std::map<std::string, Peer> _members; // SessionID -> Peer
+    PRtpTrans* _sharedSession; // The shared RTP session
     
     // Floor State
     bool _floorTaken;

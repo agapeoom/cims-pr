@@ -210,7 +210,7 @@ bool CCallMap::Delete( const char *pszCallId, bool bStopPort ) {
     itMap = m_clsMap.find( pszCallId );
     if ( itMap != m_clsMap.end() ) {
         strCallId = itMap->second.m_strPeerCallId;
-        if ( itMap->second.m_bRecv ) {
+        if ( itMap->second.m_iPeerRtpPort > 0 ) {
             iPort = itMap->second.m_iPeerRtpPort;
         }
         m_clsMap.erase( itMap );
@@ -219,7 +219,7 @@ bool CCallMap::Delete( const char *pszCallId, bool bStopPort ) {
     if ( bRes ) {
         itMap = m_clsMap.find( strCallId );
         if ( itMap != m_clsMap.end() ) {
-            if ( itMap->second.m_bRecv ) {
+            if ( itMap->second.m_iPeerRtpPort > 0 ) {
                 iPort = itMap->second.m_iPeerRtpPort;
             }
             m_clsMap.erase( itMap );

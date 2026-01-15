@@ -46,16 +46,32 @@ public:
     void StartMonitor();
     void StopMonitor();
     void OnCmpStatusChanged( bool bConnected );
-    void OnCallTerminated( const std::string& strCallId );
+    bool OnCallTerminated( const std::string& strCallId );
+    void OnCallStarted( const std::string& strCallId, const std::string& strRemoteIp, int iRemotePort );
 
 private:
     void MonitorLoop();
-    void SyncGroups();
+    void SyncGroupsState();
+    void CheckMemberState();
     void CheckGroupIntegrity();
 
     bool m_bMonitorRunning;
     std::thread m_threadMonitor;
 
+    struct GroupRtpInfo {
+        int iPort;
+        std::string strIp;
+    };
+    std::map<std::string, GroupRtpInfo> m_mapGroupRtp;
+
+    struct CallSessionInfo {
+        std::string strGroupId;
+        std::string strMemberId;
+        std::string strSessionId;
+    };
+    // CallId -> Info
+    std::map<std::string, CallSessionInfo> m_mapCallSession;
+    
     // Track Active Calls (UserId -> CallId)
     std::map<std::string, std::string> m_mapUserCall; 
     std::recursive_mutex m_mutex;

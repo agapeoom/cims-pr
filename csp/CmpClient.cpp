@@ -235,20 +235,59 @@ bool CCmpClient::RemoveSession(const std::string& strSessionId) {
     return SendRequestAndWait(strPayload, strResp);
 }
 
-bool CCmpClient::AddGroup(const std::string& strGroupId) {
-    std::string strPayload = "CSP_MAIN 0 CMP_MAIN 0 addgroup " + strGroupId;
+bool CCmpClient::AddGroup(const std::string& strGroupId, std::string& strIp, int& iPort) {
+    // Send 7 tokens: Header(0-3) CMD(4) DummySess(5) GroupId(6) -> Matching CmpServer expectation
+    // Wait, Server header consumes 0-5. So Header(6 tokens).
+    // Token 5 is part of header.
+    // If we send "addgroup 0 2000".
+    // 0:CSP 1:0 2:CMP 3:0 4:addgroup 5:0.
+    // Header = ... addgroup 0.
+    // GroupId = tokens[6] = 2000.
+    std::string strPayload = "CSP_MAIN 0 CMP_MAIN 0 addgroup 0 " + strGroupId;
     std::string strResp;
-    return SendRequestAndWait(strPayload, strResp);
+    
+    if (SendRequestAndWait(strPayload, strResp)) {
+        // Parse: Scan for "OK"
+        std::stringstream ss(strResp);
+        std::string token;
+        std::vector<std::string> tokens;
+        while (std::getline(ss, token, ' ')) {
+            if (!token.empty()) {
+                tokens.push_back(token);
+            }
+        }
+
+        for (size_t i = 0; i < tokens.size(); ++i) {
+            if (tokens[i] == "OK") {
+                if (i + 2 < tokens.size()) {
+                    strIp = tokens[i+1];
+                    iPort = std::stoi(tokens[i+2]);
+                    CLog::Print(LOG_INFO, "CmpClient::AddGroup Success: %s:%d", strIp.c_str(), iPort);
+                    return true;
+                }
+            }
+        }
+        CLog::Print(LOG_ERROR, "CmpClient::AddGroup Parse Fail: OK not found or args missing. Resp: %s", strResp.c_str());
+    } else {
+         CLog::Print(LOG_ERROR, "CmpClient::AddGroup SendRequest Failed");
+    }
+    return false;
 }
 
-bool CCmpClient::JoinGroup(const std::string& strGroupId, const std::string& strSessionId) {
-    std::string strPayload = "CSP_MAIN " + strSessionId + " CMP_MAIN 0 joingroup " + strGroupId + " " + strSessionId;
+bool CCmpClient::JoinGroup(const std::string& strGroupId, const std::string& strSessionId, const std::string& strIp, int iPort) {
+    std::string strPayload = "CSP_MAIN " + strSessionId + " CMP_MAIN 0 joingroup " + strGroupId + " " + strSessionId + " " + strIp + " " + std::to_string(iPort);
     std::string strResp;
     return SendRequestAndWait(strPayload, strResp);
 }
 
 bool CCmpClient::LeaveGroup(const std::string& strGroupId, const std::string& strSessionId) {
     std::string strPayload = "CSP_MAIN " + strSessionId + " CMP_MAIN 0 leavegroup " + strGroupId + " " + strSessionId;
+    std::string strResp;
+    return SendRequestAndWait(strPayload, strResp);
+}
+
+bool CCmpClient::RemoveGroup(const std::string& strGroupId) {
+    std::string strPayload = "CSP_MAIN 0 CMP_MAIN 0 removegroup " + strGroupId;
     std::string strResp;
     return SendRequestAndWait(strPayload, strResp);
 }

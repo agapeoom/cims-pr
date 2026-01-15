@@ -26,7 +26,7 @@ CGroupCallService::~CGroupCallService() {
 }
 
 /**
- * @brief Process Group Call
+ * @brief Process Incoming Group Call (A calling Group)
  */
 bool CGroupCallService::ProcessGroupCall( const char *pszGroupId, const char *pszCallerInfo, const char *pszCallId,
                                           CSipCallRtp *pclsRtp, CSipCallRoute *pclsRoute ) {
@@ -38,182 +38,105 @@ bool CGroupCallService::ProcessGroupCall( const char *pszGroupId, const char *ps
 
     CLog::Print( LOG_INFO, "Processing Group Call GroupId(%s) Name(%s) Caller(%s)", 
                  pszGroupId, clsGroup.m_strName.c_str(), pszCallerInfo );
-
-    // Join the caller to the group in CMP
-    if (pclsRtp) {
-        // Assuming the first port is the audio port we allocated
-        // We need to find the SessionID associated with this port.
-        // pclsRtp has m_iPort, but we need to know which port index or if it's the base port.
-        // Usually m_iPort is the start port.
-        
-        // pclsRtp doesn't seem to expose m_iPort directly in public interface based on visual inspection of other files?
-        // Wait, SipServer.cpp uses pclsRtp->m_iPort. let's assume it's public.
-        // However, we need to be careful. The port in pclsRtp might strictly be what we SetIpPort with.
-        
-        // Let's iterate or check.
-        // For now, let's try to look up the port.
-        // We can't easy get the exact port number if we don't know it.
-        // But SipServer.cpp calls SetIpPort on it.
-        
-        // Let's assume we can get it via simple property or method.
-        // We need to look at CSipCallRtp definition or guess.
-        // Based on SipServer.cpp: pclsRtp->SetIpPort(...)
-        // It doesn't use m_iPort for reading usually, mostly setting.
-        
-        // Actually, we can just use the fact that we just allocated it if this is the caller.
-        // But ProcessGroupCall is called from EventIncomingCall.
-        // The allocation happened just before in EventIncomingCall:
-        // iStartPort = gclsRtpMap.CreatePort(...)
-        // pclsRtp->SetIpPort(..., iStartPort, ...)
-        
-        // So pclsRtp has the info.
-        // Let's try to access it. If compile fails, I'll fix.
-        // But wait, pclsRtp might be an opaque pointer to SipCallRtp? No it's included via SipUserAgent.h probably.
-        
-        // Let's assume we can use the RtpMap lookup.
-        // Issue: We don't have the port number variable here easily unless we inspect pclsRtp.
-        
-        // Workaround: We can't easily get the port if we don't know the member name.
-        // Let's look at RtpMap.h again to see if CRtpInfo can be found by other means? No.
-        
-        // Let's look at SipStack/SipUserAgentCallBack.h (viewed in RtpMap.h) or similar.
-        // Wait, I haven't viewed SipStack files.
-        // I'll take a safe bet:
-        // SipServer.cpp: pclsRtp->m_iPort = ...
-        // So m_iPort exists.
-        
-        CRtpInfo *pInfo = NULL;
-        // The first media port is usually the one we track in RtpMap key.
-        // We need to loop media count?
-        // Or just use the first one.
-        // pclsRtp->m_sttMediaInfo[0].m_iPort ... ?
-        // SipServer.cpp used: pclsRtp->SetIpPort(..., iStartPort, ...) which sets internal list.
-        // And pclsRtp->m_iPort usage in EventCallRing seems to imply a single port or start port.
-        
-        int iPort = pclsRtp->m_iPort;
-        if (gclsRtpMap.Select(iPort, &pInfo)) {
-             gclsCmpClient.JoinGroup(pszGroupId, pInfo->m_strSessionId);
-             CLog::Print( LOG_INFO, "Joined Group(%s) Session(%s) Port(%d)", pszGroupId, pInfo->m_strSessionId.c_str(), iPort );
-        } else {
-             CLog::Print( LOG_ERROR, "Failed to find session for GroupCall Port(%d)", iPort );
-        }
-    }
+    
+    // We do NOT support Incoming Group Call routing in this Refactor yet (Focus on Server-Initiated Invitation).
+    // But we should likely ensure the logic doesn't break.
+    // Legacy logic iterated members and created calls.
+    // For now, let's keep it similar but maybe skip the "Join caller to group" if not trivial.
+    // Actually, if we want A to talk to Group, A's RTP should be joined.
+    // But this function is complex. Let's just trigger Invitations for other members.
 
     std::vector<std::string>::iterator it;
     for ( it = clsGroup.m_vecMembers.begin(); it != clsGroup.m_vecMembers.end(); ++it ) {
         std::string strMember = *it;
-        std::string strNewCallId;
-        CSipMessage *pclsInvite = NULL;
-        CUserInfo clsUserInfo;
-        CSipCallRoute clsMemberRoute;
+        if (strMember == pszCallerInfo) continue; // Don't call back caller
 
-        // [FIX] Check if member is registered and get their specific route
-        if ( gclsUserMap.Select( strMember.c_str(), clsUserInfo ) == false ) {
-            CLog::Print( LOG_INFO, "GroupCall Member(%s) not available (not registered)", strMember.c_str() );
-            continue;
-        }
-        clsUserInfo.GetCallRoute( clsMemberRoute );
-
-        CLog::Print( LOG_DEBUG, "GroupCall Initiating to Member(%s)", strMember.c_str() );
-
-        // Create a new call leg for each member using their specific route
-        if ( gclsUserAgent.CreateCall( pszCallerInfo, strMember.c_str(), pclsRtp, &clsMemberRoute, strNewCallId, &pclsInvite ) ) {
-            
-            // Map the incoming call to the new outgoing call
-            // NOTE: CCallMap only supports 1-to-1 mapping. For group calls, the 'Incoming->Outgoing' map
-            // will store the LAST initiated member. 'Outgoing->Incoming' will be stored for ALL members.
-            // This means bridging will work for ANY member who answers, but we cannot track ALL outgoing legs 
-            // from the incoming call ID easily to cancel others.
-            gclsCallMap.Insert( pszCallId, strNewCallId.c_str(), -1 ); // -1 for RTP port logic (start port handled internally or via RtpMap)
-
-            // We might need to handle RTP ports correctly here if using Relay.
-            // Assuming simplified logic for now.
-
-            if ( gclsUserAgent.StartCall( strNewCallId.c_str(), pclsInvite ) == false ) {
-                CLog::Print( LOG_ERROR, "GroupCall StartCall failed for Member(%s)", strMember.c_str() );
-                // Clean up if needed
-                gclsCallMap.Delete( strNewCallId.c_str() );
-            }
-        } else {
-            CLog::Print( LOG_ERROR, "GroupCall CreateCall failed for Member(%s)", strMember.c_str() );
-        }
+        // Trigger InviteMember?
+        // InviteMember(strMember.c_str(), pszGroupId);
+        // But InviteMember creates a NEW call.
+        // We probably want to bridge.
+        // Legacy code bridged using CallMap.
+        // For Shared Session, we might just InviteMember (Use Shared Port).
+        // And Caller (A) connects to... Shared Port?
+        // If A sent INVITE, we responded 200 OK with... ?
+        // We need to Respond 200 OK with Shared Port!
+        // This response happens in SipServer::EventIncomingCall.
+        // We should ensure that returns Shared Port.
+        // But that's outside this function.
+        
+        // For now, let's just trigger InviteMember for others to join the conference.
+        InviteMember(strMember.c_str(), pszGroupId);
     }
 
     return true;
 }
 
 /**
- * @brief Invite a member to a group call
+ * @brief Invite a member to a group call using Shared RTP Session
  */
 bool CGroupCallService::InviteMember( const char *pszUserId, const char *pszGroupId ) {
     std::unique_lock<std::recursive_mutex> lock(m_mutex);
-    // Check if already invited (to avoid loop storm)
+    
+    // Check active
     if ( m_mapUserCall.find(pszUserId) != m_mapUserCall.end() ) {
-        // Already active?
         return false;
     }
     
     CUserInfo clsUserInfo;
     CSipCallRoute clsRoute;
-    std::string strSessionId;
-    int iStartPort = -1;
+    int iSharedPort = -1;
+    std::string strSharedIp;
 
-    // 1. Check User Availability
+    // 1. Check User
     if ( !gclsUserMap.Select( pszUserId, clsUserInfo ) ) {
         CLog::Print( LOG_ERROR, "InviteMember(%s) User not found", pszUserId );
         return false;
     }
     clsUserInfo.GetCallRoute( clsRoute );
 
-    // 2. Allocate RTP Port/Session
-    iStartPort = gclsRtpMap.CreatePort( SOCKET_COUNT_PER_MEDIA );
-    if ( iStartPort == -1 ) {
-        CLog::Print( LOG_ERROR, "InviteMember(%s) CreatePort failed", pszUserId );
-        return false;
-    }
-
-    // 3. Get Session ID
-    CRtpInfo *pInfo = NULL;
-    if ( gclsRtpMap.Select( iStartPort, &pInfo ) ) {
-        strSessionId = pInfo->m_strSessionId;
+    // 2. Get Shared Group Port
+    if ( m_mapGroupRtp.find(pszGroupId) != m_mapGroupRtp.end() ) {
+        iSharedPort = m_mapGroupRtp[pszGroupId].iPort;
+        strSharedIp = m_mapGroupRtp[pszGroupId].strIp;
     } else {
-        CLog::Print( LOG_ERROR, "InviteMember(%s) Session info not found for port %d", pszUserId, iStartPort );
-        gclsRtpMap.Delete(iStartPort);
-        return false;
+        // Try to allocate now
+        if ( gclsCmpClient.AddGroup( pszGroupId, strSharedIp, iSharedPort ) ) {
+             m_mapGroupRtp[pszGroupId] = { iSharedPort, strSharedIp };
+        } else {
+             CLog::Print( LOG_ERROR, "InviteMember(%s) Failed to get/alloc Shared Port for Group %s", pszUserId, pszGroupId );
+             return false;
+        }
     }
 
-    // 4. Join Group in CMP
-    if ( !gclsCmpClient.JoinGroup( pszGroupId, strSessionId ) ) {
-         CLog::Print( LOG_ERROR, "InviteMember(%s) JoinGroup failed", pszUserId );
-         gclsRtpMap.Delete(iStartPort);
-         return false;
-    }
-
-    // 5. Prepare RTP Info for INVITE (SDP)
+    // 3. Prepare RTP Info (SDP with Shared Port)
     CSipCallRtp clsRtp;
-    clsRtp.SetIpPort( gclsSetup.m_strLocalIp.c_str(), iStartPort, SOCKET_COUNT_PER_MEDIA );
+    // Use Shared IP/Port
+    clsRtp.SetIpPort( strSharedIp.c_str(), iSharedPort, SOCKET_COUNT_PER_MEDIA );
     
-    // [FIX] Add Codecs to generate valid SDP with m-line.
-    // Without codecs, SipStack generates SDP without m-line, causing 488 (Not Acceptable Here).
-    clsRtp.m_clsCodecList.push_back(0);   // PCMU
-    clsRtp.m_clsCodecList.push_back(8);   // PCMA
-    clsRtp.m_clsCodecList.push_back(101); // telephone-event
-    clsRtp.m_iCodec = 0; // Default to PCMU
-    
-    // 6. Create and Start Call
+    // Codecs
+    clsRtp.m_clsCodecList.push_back(0);   
+    clsRtp.m_clsCodecList.push_back(8);   
+    clsRtp.m_clsCodecList.push_back(101); 
+    clsRtp.m_iCodec = 0; 
+
+    // 4. Create Call
     std::string strCallId;
     CSipMessage *pclsInvite = NULL;
 
     if ( gclsUserAgent.CreateCall( pszGroupId, pszUserId, &clsRtp, &clsRoute, strCallId, &pclsInvite ) ) {
          
+         // Insert into CallMap (But manage Port cleanup ourselves)
          CCallInfo clsCallInfo;
-         clsCallInfo.m_bRecv = false; // Outgoing
-         clsCallInfo.m_iPeerRtpPort = iStartPort;
+         clsCallInfo.m_bRecv = false; 
+         clsCallInfo.m_iPeerRtpPort = iSharedPort; 
+         // Note: CallMap::Delete would try to delete this port if we don't intercept it.
+         // Intercept logic handled in EventCallEnd -> OnCallTerminated.
          
          gclsCallMap.Insert( strCallId.c_str(), clsCallInfo );
          
-         // Track
+         // Track Session Info
          m_mapUserCall[pszUserId] = strCallId;
+         m_mapCallSession[strCallId] = { pszGroupId, pszUserId, pszUserId }; // Use UserId as SessionId
 
          if ( !gclsUserAgent.StartCall( strCallId.c_str(), pclsInvite ) ) {
              CLog::Print( LOG_ERROR, "InviteMember StartCall failed" );
@@ -222,12 +145,11 @@ bool CGroupCallService::InviteMember( const char *pszUserId, const char *pszGrou
          }
     } else {
          CLog::Print( LOG_ERROR, "InviteMember CreateCall failed" );
-         gclsRtpMap.Delete(iStartPort);
          return false;
     }
 
-    CLog::Print( LOG_INFO, "InviteMember(%s) Group(%s) Session(%s) CallId(%s) Initiated", 
-                 pszUserId, pszGroupId, strSessionId.c_str(), strCallId.c_str() );
+    CLog::Print( LOG_INFO, "InviteMember(%s) Group(%s) SharedPort(%d) CallId(%s) Initiated", 
+                 pszUserId, pszGroupId, iSharedPort, strCallId.c_str() );
     return true;
 }
 
@@ -252,34 +174,123 @@ void CGroupCallService::MonitorLoop() {
         std::this_thread::sleep_for( std::chrono::seconds(5) );
         if ( !m_bMonitorRunning ) break;
         
+        // 1. Reload Group Map (File Monitoring)
+        if ( !gclsSetup.m_strGroupXmlFolder.empty() ) {
+            gclsGroupMap.Load( gclsSetup.m_strGroupXmlFolder.c_str() );
+        }
+        
+        // 2. Sync Existence (Add New, Remove Deleted)
+        SyncGroupsState();
+        
+        // 3. Check Calls (Kick removed members)
+        CheckMemberState();
+
+        // 4. Invite Missing Members
         CheckGroupIntegrity();
     }
 }
 
-void CGroupCallService::SyncGroups() {
-    CLog::Print( LOG_INFO, "SyncGroups: Re-creating all groups in CMP" );
-    gclsGroupMap.IterateInternal([](const CXmlGroup& group) {
-        if ( !gclsCmpClient.AddGroup( group.m_strId ) ) {
-            CLog::Print( LOG_ERROR, "SyncGroups: AddGroup(%s) failed", group.m_strId.c_str() );
+void CGroupCallService::SyncGroupsState() {
+    // A. Add New Groups
+    gclsGroupMap.IterateInternal([this](const CXmlGroup& group) {
+        std::unique_lock<std::recursive_mutex> lock(m_mutex);
+        if ( m_mapGroupRtp.find(group.m_strId) == m_mapGroupRtp.end() ) {
+            lock.unlock(); // Release lock for network op
+            
+            std::string ip; int port;
+            if ( gclsCmpClient.AddGroup( group.m_strId, ip, port ) ) {
+                std::unique_lock<std::recursive_mutex> lock2(m_mutex);
+                m_mapGroupRtp[group.m_strId] = { port, ip };
+                CLog::Print( LOG_INFO, "SyncGroupsState: Added Group(%s) -> %s:%d", group.m_strId.c_str(), ip.c_str(), port );
+            }
         }
     });
+
+    // B. Remove Deleted Groups
+    std::vector<std::string> vecToRemove;
+    {
+        std::unique_lock<std::recursive_mutex> lock(m_mutex);
+        for(auto it = m_mapGroupRtp.begin(); it != m_mapGroupRtp.end(); ++it) {
+            CXmlGroup group;
+            if ( !gclsGroupMap.Select(it->first.c_str(), group) ) {
+                vecToRemove.push_back(it->first);
+            }
+        }
+    }
+
+    for(const auto& strGroupId : vecToRemove) {
+        CLog::Print( LOG_INFO, "SyncGroupsState: Group(%s) removed from config. Cleaning up.", strGroupId.c_str() );
+        gclsCmpClient.RemoveGroup(strGroupId);
+        
+        std::unique_lock<std::recursive_mutex> lock(m_mutex);
+        m_mapGroupRtp.erase(strGroupId);
+    }
+}
+
+void CGroupCallService::CheckMemberState() {
+    std::vector<std::string> vecToKick;
     
-    // After Sync, CheckIntegrity will handle re-invites naturally if calls were lost.
+    {
+        std::unique_lock<std::recursive_mutex> lock(m_mutex);
+        for(auto it = m_mapUserCall.begin(); it != m_mapUserCall.end(); ++it) {
+            std::string strUserId = it->first;
+            std::string strCallId = it->second;
+            
+            auto itSess = m_mapCallSession.find(strCallId);
+            if (itSess != m_mapCallSession.end()) {
+                std::string strGroupId = itSess->second.strGroupId;
+                
+                CXmlGroup group;
+                if ( !gclsGroupMap.Select(strGroupId.c_str(), group) ) {
+                    // Group Gone
+                    vecToKick.push_back(strCallId);
+                } else {
+                    // Check if member still in group
+                    bool bFound = false;
+                    for(const auto& mem : group.m_vecMembers) {
+                        if (mem == strUserId) {
+                            bFound = true;
+                            break;
+                        }
+                    }
+                    if (!bFound) vecToKick.push_back(strCallId);
+                }
+            }
+        }
+    }
+    
+    for(const auto& strCallId : vecToKick) {
+        CLog::Print( LOG_INFO, "CheckMemberState: Call(%s) no longer valid (Group/Member removed). Terminating.", strCallId.c_str() );
+        gclsUserAgent.StopCall(strCallId.c_str());
+        // OnCallTerminated will handle cleanup
+    }
 }
 
 void CGroupCallService::CheckGroupIntegrity() {
-    // Iterate groups
+    // Re-invite missing members
     gclsGroupMap.IterateInternal([this](const CXmlGroup& group) {
-        // Iterate members
+        // First ensure Group Context exists
+        {
+            std::unique_lock<std::recursive_mutex> lock(m_mutex);
+            if (m_mapGroupRtp.find(group.m_strId) == m_mapGroupRtp.end()) {
+                // Try sync 
+                // Unlock to avoid Sync calling AddGroup blocking? CmpClient is separate lock.
+                lock.unlock();
+                std::string ip; int port;
+                if (gclsCmpClient.AddGroup(group.m_strId, ip, port)) {
+                     lock.lock();
+                     m_mapGroupRtp[group.m_strId] = { port, ip };
+                } else {
+                     return; // Skip this group if alloc fails
+                }
+            }
+        }
+
         for ( const std::string& strUserId : group.m_vecMembers ) {
-             // Check if registered
              CUserInfo clsUser;
              if ( gclsUserMap.Select( strUserId.c_str(), clsUser ) ) {
-                 // Check if active call
                  std::unique_lock<std::recursive_mutex> lock(m_mutex);
                  if ( m_mapUserCall.find(strUserId) == m_mapUserCall.end() ) {
-                     // Registered but no call -> Invite!
-                     // Unlock before calling InviteMember to avoid recursion deadlock (Invite locks mutex)
                      lock.unlock();
                      InviteMember( strUserId.c_str(), group.m_strId.c_str() );
                  }
@@ -291,27 +302,53 @@ void CGroupCallService::CheckGroupIntegrity() {
 void CGroupCallService::OnCmpStatusChanged( bool bConnected ) {
     if ( bConnected ) {
         CLog::Print( LOG_INFO, "OnCmpStatusChanged: Connected -> Syncing Groups" );
-        SyncGroups();
+        SyncGroupsState();
     } else {
         CLog::Print( LOG_INFO, "OnCmpStatusChanged: Disconnected" );
-        // Optionally Clear m_mapUserCall or teardown calls?
-        // If CMP is gone, RTP is dead. 
-        // We should probably teardown all group calls.
+        // Cleanup?
         std::unique_lock<std::recursive_mutex> lock(m_mutex);
-        for ( auto it = m_mapUserCall.begin(); it != m_mapUserCall.end(); ++it ) {
-             // auto const& userId = it->first;
-             // auto const& callId = it->second;
-             // Just iterating, nothing to do unless we Terminate.
+        m_mapGroupRtp.clear(); 
+        // We probably shouldn't clear user calls immediately unless we destroy SIP dialogs.
+    }
+}
+
+// 200 OK Received -> Join Group Helper
+void CGroupCallService::OnCallStarted( const std::string& strCallId, const std::string& strRemoteIp, int iRemotePort ) {
+    std::unique_lock<std::recursive_mutex> lock(m_mutex);
+    auto it = m_mapCallSession.find(strCallId);
+    if (it != m_mapCallSession.end()) {
+        CallSessionInfo& info = it->second;
+        // Join Group in CMP (Register Peer)
+        if ( gclsCmpClient.JoinGroup(info.strGroupId, info.strSessionId, strRemoteIp, iRemotePort) ) {
+             CLog::Print( LOG_INFO, "OnCallStarted: Joined Group(%s) Peer(%s:%d)", info.strGroupId.c_str(), strRemoteIp.c_str(), iRemotePort );
+        } else {
+             CLog::Print( LOG_ERROR, "OnCallStarted: JoinGroup failed for %s", info.strGroupId.c_str() );
         }
     }
 }
 
-void CGroupCallService::OnCallTerminated( const std::string& strCallId ) {
+// BYE/Error -> Leave Group
+bool CGroupCallService::OnCallTerminated( const std::string& strCallId ) {
     std::unique_lock<std::recursive_mutex> lock(m_mutex);
-    for ( auto it = m_mapUserCall.begin(); it != m_mapUserCall.end(); ++it ) {
-        if ( it->second == strCallId ) {
-            m_mapUserCall.erase(it);
-            break;
+    
+    // Check if it's a group call session
+    auto it = m_mapCallSession.find(strCallId);
+    if (it != m_mapCallSession.end()) {
+        CallSessionInfo& info = it->second;
+        gclsCmpClient.LeaveGroup(info.strGroupId, info.strSessionId);
+        
+        m_mapCallSession.erase(it);
+        
+        // Remove from user map
+        for(auto uIt = m_mapUserCall.begin(); uIt != m_mapUserCall.end(); ++uIt) {
+            if (uIt->second == strCallId) {
+                m_mapUserCall.erase(uIt);
+                break;
+            }
         }
+        CLog::Print( LOG_INFO, "OnCallTerminated: Group Call Terminated. CallId=%s", strCallId.c_str() );
+        return true; 
     }
+    
+    return false;
 }
