@@ -49,3 +49,28 @@ After a successful build, a distribution package can be created using the `dist`
 make dist
 ```
 This will create a `dist/` directory in your build folder containing the binaries and configuration files ready for deployment.
+
+
+5. ** 실행 **  (build/dist/)
+5.1 ** 호처리서버(csp) **
+ * foreground 실행 
+``` bash
+./csp ../config/csp.xml -n 
+```
+ * background 실행/종료/상태조회
+``` bash
+ ./csp.sh start 
+```
+ * 종료
+``` bash
+ ./csp.sh stop
+```
+ * 상태조회
+ ``` bash
+./csp.sh status
+```
+
+5.2 ** 미디어처리서버(cmp)
+``` bash
+ ./cmp ../config/cmp.conf
+```
