@@ -252,7 +252,34 @@ void CSipServer::EventIncomingCall( const char *pszCallId, const char *pszFrom, 
             return StopCall( pszCallId, SIP_INTERNAL_SERVER_ERROR );
         }
 
-        pclsRtp->SetIpPort( gclsSetup.m_strLocalIp.c_str(), iStartPort, SOCKET_COUNT_PER_MEDIA );
+        // [FIX] Update CMP with Caller Info (Peer A)
+        // Replaced unsafe Select with thread-safe SetIpPort calls
+        printf("[DEBUG] EventIncomingCall: Update Caller Info (Peer A) for Port %d\n", iStartPort);
+             
+        // Video (Index 2)
+        if (pclsRtp->GetMediaCount() >= 2) {
+             int iVideoPort = pclsRtp->GetVideoPort();
+             if (iVideoPort > 0) {
+                  gclsRtpMap.SetIpPort(iStartPort, 2, inet_addr(pclsRtp->m_strIp.c_str()), iVideoPort);
+             }
+        }
+             
+        int iAudioPort = pclsRtp->GetAudioPort();
+        if (iAudioPort <= 0 && pclsRtp->m_iPort > 0) {
+             iAudioPort = pclsRtp->m_iPort;
+        }
+             
+        if (iAudioPort > 0) {
+             gclsRtpMap.SetIpPort(iStartPort, 0, inet_addr(pclsRtp->m_strIp.c_str()), iAudioPort);
+        }
+        
+        std::string strRelayIp = gclsSetup.m_strLocalIp;
+        std::string strAllocatedIp;
+        if (gclsRtpMap.GetLocalIp(iStartPort, strAllocatedIp) && !strAllocatedIp.empty()) {
+            strRelayIp = strAllocatedIp;
+        }
+
+        pclsRtp->SetIpPort( strRelayIp.c_str(), iStartPort, SOCKET_COUNT_PER_MEDIA );
     }
 
     clsUserInfo.GetCallRoute( clsRoute );
@@ -318,8 +345,63 @@ void CSipServer::EventCallStart( const char *pszCallId, CSipCallRtp *pclsRtp ) {
 
     if ( gclsCallMap.Select( pszCallId, clsCallInfo ) ) {
         if ( pclsRtp && clsCallInfo.m_iPeerRtpPort > 0 ) {
-            pclsRtp->SetIpPort( gclsSetup.m_strLocalIp.c_str(), clsCallInfo.m_iPeerRtpPort, SOCKET_COUNT_PER_MEDIA );
+            // [MODIFIED] Update Local RtpMap with Remote Info so it triggers UpdateSession
+            // [MODIFIED] Update Local RtpMap with Remote Info so it triggers UpdateSession
+            // Thread-safe implementation using GetLocalIp for existence check and SetIpPort
+            int iRtpPort = clsCallInfo.m_iPeerRtpPort;
+            
+            printf("[DEBUG] EventCallStart Fix: CallId=%s PeerRtpPort=%d\n", pszCallId, iRtpPort);
+
+            std::string strAllocatedIp;
+            if (!gclsRtpMap.GetLocalIp(iRtpPort, strAllocatedIp)) {
+                // If Leg 2 (Send side), CallMap might have stored StartPort + 2, 
+                // but EventIncomingCall used StartPort. Try accounting for that.
+                printf("[DEBUG] EventCallStart Fix: Select(%d) failed. Trying %d\n", iRtpPort, iRtpPort - 2);
+                if (gclsRtpMap.GetLocalIp(iRtpPort - 2, strAllocatedIp)) {
+                     iRtpPort = iRtpPort - 2;
+                }
+            }
+
+            if (!strAllocatedIp.empty()) {
+                printf("[DEBUG] EventCallStart Fix: Found RtpInfo for port %d\n", iRtpPort);
+                
+                // Debug raw members
+                printf("[DEBUG] EventCallStart Fix: pclsRtp members: m_iPort=%d, m_strIp=%s\n", 
+                        pclsRtp->m_iPort, pclsRtp->m_strIp.c_str());
+
+                // Update Video First (Index 2) so Audio (Index 0) trigger has it
+                if (pclsRtp->GetMediaCount() >= 2) { // Assuming multi media
+                     int iVideoPort = pclsRtp->GetVideoPort();
+                     printf("[DEBUG] EventCallStart Fix: VideoPort=%d\n", iVideoPort);
+                     if (iVideoPort > 0) {
+                         gclsRtpMap.SetIpPort(iRtpPort, 2, inet_addr(pclsRtp->m_strIp.c_str()), iVideoPort, 1);
+                     }
+                }
+                
+                int iAudioPort = pclsRtp->GetAudioPort();
+                printf("[DEBUG] EventCallStart Fix: AudioPort=%d\n", iAudioPort);
+                
+                if (iAudioPort <= 0 && pclsRtp->m_iPort > 0) {
+                    iAudioPort = pclsRtp->m_iPort;
+                    printf("[DEBUG] EventCallStart Fix: Using m_iPort as AudioPort: %d\n", iAudioPort);
+                }
+
+                if (iAudioPort > 0) {
+                     // This triggers UpdateSession with Peer Idx 1
+                     gclsRtpMap.SetIpPort(iRtpPort, 0, inet_addr(pclsRtp->m_strIp.c_str()), iAudioPort, 1);
+                }
+            } else {
+                 printf("[DEBUG] EventCallStart Fix: FAILED to find RtpInfo for port %d (or %d)\n", clsCallInfo.m_iPeerRtpPort, clsCallInfo.m_iPeerRtpPort - 2);
+            }
+            
+            std::string strRelayIp = gclsSetup.m_strLocalIp;
+            if (!strAllocatedIp.empty()) {
+                strRelayIp = strAllocatedIp;
+            }
+
+            pclsRtp->SetIpPort( strRelayIp.c_str(), clsCallInfo.m_iPeerRtpPort, SOCKET_COUNT_PER_MEDIA );
         }
+
 
         if ( gclsUserAgent.IsConnected( clsCallInfo.m_strPeerCallId.c_str() ) ) {
             gclsUserAgent.SendReInvite( clsCallInfo.m_strPeerCallId.c_str(), pclsRtp );
@@ -371,6 +453,10 @@ void CSipServer::EventCallEnd( const char *pszCallId, int iSipStatus ) {
         }
 
         gclsUserAgent.StopCall( clsCallInfo.m_strPeerCallId.c_str() );
+        
+        // [GROUP CALL RECOVERY]
+        gclsGroupCallService.OnCallTerminated( pszCallId );
+        
         gclsCallMap.Delete( pszCallId );
     } else {
         std::string strCallId;

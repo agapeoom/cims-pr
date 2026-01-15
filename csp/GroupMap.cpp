@@ -89,3 +89,11 @@ void CGroupMap::Clear() {
     m_clsMap.clear();
     m_clsMutex.release();
 }
+
+void CGroupMap::IterateInternal( std::function<void(const CXmlGroup&)> fnCallback ) {
+    m_clsMutex.acquire();
+    for ( auto const& [key, val] : m_clsMap ) {
+        fnCallback(val);
+    }
+    m_clsMutex.release();
+}

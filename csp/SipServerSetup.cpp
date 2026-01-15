@@ -20,6 +20,12 @@
 
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/socket.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
 #include "CspServer.h"
 #include "Log.h"
@@ -73,8 +79,6 @@ CSipServerSetup::CSipServerSetup()
       m_bIpv6( false ),
       m_iMinRegisterTimeout( 300 ),
       m_bUseRtpRelay( false ),
-      m_iBeginRtpPort( 10000 ),
-      m_iEndRtpPort( 60000 ),
       m_iSendOptionsPeriod( 0 ),
       m_bUseRegisterSession( false ),
       m_iLogLevel( 0 ),
@@ -160,6 +164,33 @@ bool CSipServerSetup::Read( const char *pszFileName ) {
     m_strFileName = pszFileName;
     SetFileSizeTime();
 
+    if (m_strLocalIp == "0.0.0.0") {
+        // Auto-detect IP
+        int fd = socket(AF_INET, SOCK_DGRAM, 0);
+        if (fd >= 0) {
+            struct ifconf ifc;
+            char buf[1024];
+            ifc.ifc_len = sizeof(buf);
+            ifc.ifc_buf = buf;
+            if (ioctl(fd, SIOCGIFCONF, &ifc) == 0) {
+                struct ifreq* it = ifc.ifc_req;
+                const struct ifreq* const end = it + (ifc.ifc_len / sizeof(struct ifreq));
+                for (; it != end; ++it) {
+                    struct sockaddr_in* addr = (struct sockaddr_in*)&it->ifr_addr;
+                    if (addr->sin_family == AF_INET) {
+                        std::string ip = inet_ntoa(addr->sin_addr);
+                        if (ip != "127.0.0.1" && ip != "0.0.0.0") {
+                            m_strLocalIp = ip;
+                            break;
+                        }
+                    }
+                }
+            }
+            close(fd);
+        }
+        CLog::Print(LOG_INFO, "Auto-detected LocalIp: %s", m_strLocalIp.c_str());
+    }
+
     return true;
 }
 
@@ -221,8 +252,7 @@ bool CSipServerSetup::Read( CXmlElement &clsXml ) {
     pclsElement = clsXml.SelectElement( "RtpRelay" );
     if ( pclsElement ) {
         pclsElement->SelectElementData( "UseRtpRelay", m_bUseRtpRelay );
-        pclsElement->SelectElementData( "BeginPort", m_iBeginRtpPort );
-        pclsElement->SelectElementData( "EndPort", m_iEndRtpPort );
+        pclsElement->SelectElementData( "CmpIp", m_strCmpIp );
         pclsElement->SelectElementData( "CmpIp", m_strCmpIp );
         pclsElement->SelectElementData( "CmpPort", m_iCmpPort );
         pclsElement->SelectElementData( "LocalCmpPort", m_iLocalCmpPort );

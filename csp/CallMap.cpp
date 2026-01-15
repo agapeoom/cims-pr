@@ -65,7 +65,7 @@ bool CCallMap::Insert( const char *pszRecvCallId, const char *pszSendCallId, int
         clsCallInfo.m_strPeerCallId = pszRecvCallId;
         clsCallInfo.m_bRecv = false;
         if ( iStartRtpPort > 0 ) {
-            clsCallInfo.m_iPeerRtpPort = iStartRtpPort + 2;
+            clsCallInfo.m_iPeerRtpPort = iStartRtpPort;
         }
         m_clsMap.insert( CALL_MAP::value_type( pszSendCallId, clsCallInfo ) );
     }
@@ -227,7 +227,10 @@ bool CCallMap::Delete( const char *pszCallId, bool bStopPort ) {
     }
     m_clsMutex.release();
     if ( bStopPort && iPort > 0 ) {
-        gclsRtpMap.SetStop( iPort );
+        gclsRtpMap.Delete( iPort );
+        printf("[DEBUG] CallMap::Delete(%s) -> RtpMap::Delete(%d)\n", pszCallId, iPort);
+    } else {
+        printf("[DEBUG] CallMap::Delete(%s) SKIPPED RtpMap::Delete (iPort=%d, bStopPort=%d)\n", pszCallId, iPort, bStopPort);
     }
     return bRes;
 }

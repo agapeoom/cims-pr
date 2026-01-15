@@ -4,7 +4,7 @@
 #include <string>
 #include <map>
 #include <iostream>
-#include "pbase.h"
+//#include "pbase.h"
 #include "pmodule.h"
 #include "PRtpHandler.h"
 #include "McpttGroup.h"
@@ -21,16 +21,16 @@ public:
 
 protected:
     void handlePacket(char* buf, int len, const std::string& ip, int port);
-    void processAdd(const std::vector<std::string>& tokens, const std::string& ip, int port);
-    void processRemove(const std::vector<std::string>& tokens, const std::string& ip, int port);
-    void processModify(const std::vector<std::string>& tokens, const std::string& ip, int port);
-    void processAlive(const std::vector<std::string>& tokens, const std::string& ip, int port);
+    void processAdd(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header);
+    void processRemove(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header);
+    void processModify(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header);
+    void processAlive(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header);
 
     // Group Management
-    void processAddGroup(const std::vector<std::string>& tokens, const std::string& ip, int port);
-    void processRemoveGroup(const std::vector<std::string>& tokens, const std::string& ip, int port);
-    void processJoinGroup(const std::vector<std::string>& tokens, const std::string& ip, int port);
-    void processLeaveGroup(const std::vector<std::string>& tokens, const std::string& ip, int port);
+    void processAddGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header);
+    void processRemoveGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header);
+    void processJoinGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header);
+    void processLeaveGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header);
 
     void sendResponse(const std::string& ip, int port, const std::string& msg);
 
@@ -57,9 +57,6 @@ private:
     std::string _serverIp;
     int _serverPort;
     std::string _configFile;
-
-    std::string _cspIp;
-    int _cspPort;
 
     std::vector<PRtpTrans*> _resourcePool; // Pre-allocated list
     std::vector<PRtpTrans*> _freeResources; // Available for use

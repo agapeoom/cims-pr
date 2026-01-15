@@ -4,7 +4,16 @@
 #include <string>
 #include <vector>
 #include <mutex>
-#include "SipStackDefine.h" // For Socket types if needed, or standard includes
+#include <thread>
+#include <atomic>
+#include <condition_variable>
+#include <functional>
+#include "SipStackDefine.h"
+
+struct CmpSocket {
+    int iSocket;
+    bool bInUse;
+};
 
 class CCmpClient {
 public:
@@ -14,7 +23,7 @@ public:
     
     // Returns assigned local IP/Port from CMP
     bool AddSession(const std::string& strSessionId, std::string& strLocalIp, int& iLocalPort, int& iLocalVideoPort);
-    bool UpdateSession(const std::string& strSessionId, const std::string& strRmtIp, int iRmtPort, int iRmtVideoPort, std::string& strLocalIp, int& iLocalPort);
+    bool UpdateSession(const std::string& strSessionId, const std::string& strRmtIp, int iRmtPort, int iRmtVideoPort, int iPeerIdx, std::string& strLocalIp, int& iLocalPort);
     bool RemoveSession(const std::string& strSessionId);
 
     bool AddGroup(const std::string& strGroupId);
@@ -25,12 +34,51 @@ private:
     CCmpClient();
     ~CCmpClient();
 
-    bool SendCommand(const std::string& strCmd, std::string& strResponse);
+    // Async Request/Response
+    struct Transaction {
+        unsigned int id;
+        std::string strResponse; 
+        std::condition_variable cv;
+        std::mutex mutex;
+        bool bCompleted;
+        Transaction() : id(0), bCompleted(false) {}
+    };
+
+    bool SendRequestAndWait(const std::string& strPayload, std::string& strResponse);
+
+    // Threads
+    void KeepAliveLoop();
+    void RecvLoop();
+    void OnPacketReceived(const std::string& strPacket, const std::string& strIp, int iPort);
 
     std::string m_strCmpIp;
     int m_iCmpPort;
-    int m_iSocket;
-    std::mutex m_mutex;
+    int m_iLocalCmpPort;
+    
+    // Single Socket
+    int m_hSocket;
+
+    // Transaction Map
+    std::mutex m_mutexTrans;
+    std::map<unsigned int, Transaction*> m_mapTransactions;
+    unsigned int m_iNextTransId;
+
+    // Threads
+    std::atomic<bool> m_bKeepAliveRunning;
+    std::thread m_threadKeepAlive;
+    
+    std::atomic<bool> m_bRecvRunning;
+    std::thread m_threadRecv;
+
+    // Connection State
+    bool m_bConnected;
+    std::function<void(bool)> m_fnConnectionCallback;
+
+public:
+    void SetConnectionCallback(std::function<void(bool)> fnCallback) {
+        m_fnConnectionCallback = fnCallback;
+    }
+    bool IsConnected() const { return m_bConnected; }
 };
 
 #define gclsCmpClient CCmpClient::GetInstance()

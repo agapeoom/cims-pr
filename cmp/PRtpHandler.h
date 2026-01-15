@@ -110,6 +110,15 @@ public :
       return ret;
    }
 
+   int sendTo(char * pkt, int len, struct sockaddr_in* pAddr)
+   {
+      int ret = sendto(_fd, pkt, len, 0, (sockaddr*)pAddr, sizeof(struct sockaddr));
+      if (ret < 0) {
+          // fprintf(stderr, "sendTo failed: %s (fd=%d)\n", strerror(errno), _fd);
+      }
+      return ret;
+   }
+
    int recv(char * pkt, int len, std::string & ipRmt, int &portRmt) 
    {
       socklen_t nSockAddrLen = sizeof(struct sockaddr);
@@ -120,10 +129,15 @@ public :
          return -1;
       }
       portRmt = ntohs(_addrRmtLast.sin_port);
-      ipRmt = (char *) inet_ntoa(_addrRmtLast.sin_addr);
+      // ipRmt = (char *) inet_ntoa(_addrRmtLast.sin_addr);
+      // Inet_ntoa isn't thread safe potentially, but usually ok in single thread per worker.
+      // Better to use static buffer or inet_ntop? inet_ntoa returns static buffer.
+      ipRmt = inet_ntoa(_addrRmtLast.sin_addr);
 
       return nLen;
    }
+   
+   struct sockaddr_in& getLastAddr() { return _addrRmtLast; }
 
 };
 
@@ -145,6 +159,20 @@ private:
   // Stored local ports (set during init)
   unsigned int _localPort;
   unsigned int _localVideoPort;
+  
+  // Relay Peers
+  struct PeerInfo {
+      std::string ip;
+      unsigned int port;
+      unsigned int videoPort;
+      struct sockaddr_in addrRtp;
+      struct sockaddr_in addrRtcp;
+      struct sockaddr_in addrVideoRtp;
+      struct sockaddr_in addrVideoRtcp;
+      bool active;
+  };
+  
+  PeerInfo _peers[2];
 
 public:
   PRtpTrans(const std::string & name);
@@ -152,7 +180,7 @@ public:
 
   bool init(const std::string & ipLoc, unsigned int portLoc, unsigned int videoPortLoc = 0);
   bool final();
-  bool setRmt(const std::string & ipRmt, unsigned int portRmt, unsigned int videoPortRmt = 0);
+  bool setRmt(const std::string & ipRmt, unsigned int portRmt, unsigned int videoPortRmt = 0, int peerIdx = -1);
   
   unsigned int getLocalPort() const { return _localPort; }
   unsigned int getLocalVideoPort() const { return _localVideoPort; }
@@ -168,6 +196,12 @@ public:
   bool proc(); 
   bool proc(int id, const std::string & name, PEvent::Ptr spEvent);
 
+  void reset();
+  void setWorkerName(const std::string& name) { _workerName = name; }
+  std::string getWorkerName() const { return _workerName; }
+
+private:
+  std::string _workerName;
 };
 
 #endif // __PRTP_HANDLER_H__

@@ -28,12 +28,12 @@ The binary will be located at `/home/nex/work/cims/bin/cmp`.
 Start the server by specifying the UDP listening port:
 
 ```bash
-./bin/cmp <port>
+./bin/cmp
 ```
 
 Example:
 ```bash
-./bin/cmp 9000
+./bin/cmp 
 ```
 
 ## Control Protocol

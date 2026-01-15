@@ -9,9 +9,11 @@
 #include <cstring>
 #include <thread>
 #include <algorithm>
+#include <cctype>
+#include "PRtpHandler.h"
 
 CmpServer::CmpServer(const std::string& name, const std::string& configFile)
-    : PModule(name), _running(false), _udpFd(-1), _configFile(configFile), _cspPort(0)
+    : PModule(name), _running(false), _udpFd(-1), _configFile(configFile)
 {
     loadConfig();
     initResourcePool();
@@ -67,7 +69,6 @@ bool CmpServer::startServer() {
 void CmpServer::stopServer() {
     _running = false;
     if (_udpFd >= 0) {
-        // close(_udpFd);
         ::close(_udpFd);
         _udpFd = -1;
     }
@@ -89,12 +90,8 @@ void CmpServer::runControlLoop() {
     }
 }
 
-#include <cctype>
-// ...
-
 void CmpServer::handlePacket(char* buf, int len, const std::string& ip, int port) {
     std::string line(buf);
-    // printf("RX: %s\n", line.c_str());
     std::stringstream ss(line);
     std::string token;
     std::vector<std::string> tokens;
@@ -102,219 +99,223 @@ void CmpServer::handlePacket(char* buf, int len, const std::string& ip, int port
         tokens.push_back(token);
     }
 
-    if (tokens.empty()) return;
+    // Protocol: TRANS_ID CSP_ID CSP_SESS CMP_ID CMP_SESS CMD ...
+    // Indices:  0        1      2        3      4        5
+    if (tokens.size() < 6) return; // Ignore invalid
 
-    std::string cmd = tokens[0];
+    std::string headerString = tokens[0] + " " + tokens[1] + " " + tokens[2] + " " + tokens[3] + " " + tokens[4];
+    std::string cmd = tokens[5];
+    
     std::transform(cmd.begin(), cmd.end(), cmd.begin(),
         [](unsigned char c){ return std::tolower(c); });
 
-    printf("CMD: %s\n", cmd.c_str());
+    printf("CMD: %s (Header: %s)\n", cmd.c_str(), headerString.c_str());
     fflush(stdout);
 
     if (cmd == "add") {
-        processAdd(tokens, ip, port);
+        processAdd(tokens, ip, port, headerString);
     } else if (cmd == "remove") {
-        processRemove(tokens, ip, port);
+        processRemove(tokens, ip, port, headerString);
     } else if (cmd == "modify") {
-        processModify(tokens, ip, port);
+        processModify(tokens, ip, port, headerString);
     } else if (cmd == "alive") {
-        processAlive(tokens, ip, port);
+        processAlive(tokens, ip, port, headerString);
     } else if (cmd == "addgroup") {
-        processAddGroup(tokens, ip, port);
+        processAddGroup(tokens, ip, port, headerString);
     } else if (cmd == "removegroup") {
-        processRemoveGroup(tokens, ip, port);
+        processRemoveGroup(tokens, ip, port, headerString);
     } else if (cmd == "joingroup") {
-        processJoinGroup(tokens, ip, port);
+        processJoinGroup(tokens, ip, port, headerString);
     } else if (cmd == "leavegroup") {
-        processLeaveGroup(tokens, ip, port);
+        processLeaveGroup(tokens, ip, port, headerString);
     }
 }
 
-void CmpServer::processAdd(const std::vector<std::string>& tokens, const std::string& ip, int port) {
-    // add <id> <rmt_ip> <rmt_port> [rmt_video_port]
-    if (tokens.size() < 4) return;
+// NOTE: All process functions now receive full tokens.
+// Payload starts at index 6 (CMD is 5).
+// Previous index 1 ("id") is now index 6.
 
-    std::string id = tokens[1];
-    std::string rmtIp = tokens[2];
-    int rmtPort = std::stoi(tokens[3]);
+void CmpServer::processAdd(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header) {
+    // CMD: add <id> <rmt_ip> <rmt_port> [rmt_video_port] [peer_idx]
+    // Tokens: [0..4] [5=add] [6=id] [7=ip] [8=port] [9=vport] [10=pidx]
+    
+    if (tokens.size() < 9) return;
+
+    std::string id = tokens[6];
+    std::string rmtIp = tokens[7];
+    int rmtPort = std::stoi(tokens[8]);
     
     int rmtVideoPort = 0;
-    if (tokens.size() >= 5) {
-        rmtVideoPort = std::stoi(tokens[4]);
+    if (tokens.size() >= 10) {
+        rmtVideoPort = std::stoi(tokens[9]);
+    }
+    
+    int peerIdx = -1;
+    if (tokens.size() >= 11) {
+        peerIdx = std::stoi(tokens[10]);
     }
 
     PAutoLock lock(_mutex);
     if (_sessions.find(id) != _sessions.end()) {
         PRtpTrans* rtp = _sessions[id];
-        rtp->setRmt(rmtIp, rmtPort, rmtVideoPort);
+        rtp->setRmt(rmtIp, rmtPort, rmtVideoPort, peerIdx);
         
-        // Get existing local ports
         std::string locIp = _rtpIp;
         int locPort = rtp->getLocalPort();
         int locVideoPort = rtp->getLocalVideoPort();
         
-        std::string resp = "OK " + locIp + " " + std::to_string(locPort) + " " + std::to_string(locVideoPort);
+        std::string resp = header + " OK " + locIp + " " + std::to_string(locPort) + " " + std::to_string(locVideoPort);
         sendResponse(ip, port, resp);
-        printf("[ADD] ID=%s (Updated) Rmt=%s:%d VideoRmt=%d -> Existing Loc=%s:%d VideoLoc=%d\n", 
-               id.c_str(), rmtIp.c_str(), rmtPort, rmtVideoPort, locIp.c_str(), locPort, locVideoPort);
+        printf("[ADD] ID=%s (Updated) Peer=%d Rmt=%s:%d VideoRmt=%d -> Loc=%s:%d\n", 
+               id.c_str(), peerIdx, rmtIp.c_str(), rmtPort, rmtVideoPort, locIp.c_str(), locPort);
         return;
     }
 
-    // Allocate Resource
     std::string locIp = _rtpIp;
     int locPort = 0;
     int locVideoPort = 0;
     
     PRtpTrans* rtp = allocResource(locIp, locPort, locVideoPort);
     if (!rtp) {
-        sendResponse(ip, port, "ERROR: No resources");
+        sendResponse(ip, port, header + " ERROR: No resources");
         return;
     }
     
-    // Set Session Name/ID
     rtp->setSessionId(id);
-    
-    rtp->setRmt(rmtIp, rmtPort, rmtVideoPort);
+    rtp->setRmt(rmtIp, rmtPort, rmtVideoPort, peerIdx);
 
     _sessions[id] = rtp;
     
-    // Distribute to workers
     static int workerIdx = 0;
     std::string wname = formatStr("RtpWorker_%d", workerIdx++ % 4);
+    rtp->setWorkerName(wname);
     addHandler(wname, rtp);
 
-    // Response: OK <loc_ip> <loc_port> <loc_video_port>
-    std::string resp = "OK " + locIp + " " + std::to_string(locPort) + " " + std::to_string(locVideoPort);
+    std::string resp = header + " OK " + locIp + " " + std::to_string(locPort) + " " + std::to_string(locVideoPort);
     sendResponse(ip, port, resp);
     
-    printf("[ADD] ID=%s Rmt=%s:%d VideoRmt=%d -> Assigned Loc=%s:%d VideoLoc=%d\n", 
-           id.c_str(), rmtIp.c_str(), rmtPort, rmtVideoPort, locIp.c_str(), locPort, locVideoPort);
+    printf("[ADD] ID=%s Rmt=%s:%d VideoRmt=%d -> Assigned Loc=%s:%d Worker=%s\n", 
+           id.c_str(), rmtIp.c_str(), rmtPort, rmtVideoPort, locIp.c_str(), locPort, wname.c_str());
 }
 
-void CmpServer::processRemove(const std::vector<std::string>& tokens, const std::string& ip, int port) {
-    // remove <id>
-    if (tokens.size() < 2) return;
-    std::string id = tokens[1];
+void CmpServer::processRemove(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header) {
+    if (tokens.size() < 7) return;
+    std::string id = tokens[6];
 
     PAutoLock lock(_mutex);
     auto it = _sessions.find(id);
     if (it != _sessions.end()) {
         PRtpTrans* rtp = it->second;
-        // Return to pool
-        freeResource(rtp);
         
+        // Clean up handler from worker
+        delHandler(rtp->getWorkerName(), rtp);
+        rtp->reset();
+        
+        freeResource(rtp);
         _sessions.erase(it);
-        sendResponse(ip, port, "OK");
+        sendResponse(ip, port, header + " OK");
         printf("[REMOVE] ID=%s\n", id.c_str());
     } else {
-        sendResponse(ip, port, "ERROR: ID not found");
+        sendResponse(ip, port, header + " ERROR: ID not found");
     }
 }
 
-void CmpServer::processModify(const std::vector<std::string>& tokens, const std::string& ip, int port) {
-    // modify <id> <rmt_ip> <rmt_port>
-    if (tokens.size() < 4) return;
-    std::string id = tokens[1];
-    std::string rmtIp = tokens[2];
-    int rmtPort = std::stoi(tokens[3]);
+void CmpServer::processModify(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header) {
+    if (tokens.size() < 9) return;
+    std::string id = tokens[6];
+    std::string rmtIp = tokens[7];
+    int rmtPort = std::stoi(tokens[8]);
 
     PAutoLock lock(_mutex);
     auto it = _sessions.find(id);
     if (it != _sessions.end()) {
         it->second->setRmt(rmtIp, rmtPort);
-        sendResponse(ip, port, "OK");
+        sendResponse(ip, port, header + " OK");
         printf("[MODIFY] ID=%s Rmt=%s:%d\n", id.c_str(), rmtIp.c_str(), rmtPort);
     } else {
-        sendResponse(ip, port, "ERROR: ID not found");
+        sendResponse(ip, port, header + " ERROR: ID not found");
     }
 }
 
-void CmpServer::processAlive(const std::vector<std::string>& tokens, const std::string& ip, int port) {
-    sendResponse(ip, port, "OK");
+void CmpServer::processAlive(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header) {
+    sendResponse(ip, port, header + " OK");
 }
 
-void CmpServer::processAddGroup(const std::vector<std::string>& tokens, const std::string& ip, int port) {
-    // addGroup <groupId>
-    if (tokens.size() < 2) return;
-    std::string groupId = tokens[1];
+void CmpServer::processAddGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header) {
+    if (tokens.size() < 7) return;
+    std::string groupId = tokens[6];
     
     PAutoLock lock(_mutex);
     if (_groups.find(groupId) != _groups.end()) {
-        sendResponse(ip, port, "OK");
+        sendResponse(ip, port, header + " OK");
         printf("[ADD_GROUP] ID=%s (Already exists)\n", groupId.c_str());
-        fflush(stdout);
         return;
     }
     
     McpttGroup* group = new McpttGroup(groupId);
     _groups[groupId] = group;
-    sendResponse(ip, port, "OK");
+    sendResponse(ip, port, header + " OK");
     printf("[ADD_GROUP] ID=%s\n", groupId.c_str());
-    fflush(stdout);
 }
 
-void CmpServer::processRemoveGroup(const std::vector<std::string>& tokens, const std::string& ip, int port) {
-    // removeGroup <groupId>
-    if (tokens.size() < 2) return;
-    std::string groupId = tokens[1];
+void CmpServer::processRemoveGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header) {
+    if (tokens.size() < 7) return;
+    std::string groupId = tokens[6];
     
     PAutoLock lock(_mutex);
     auto it = _groups.find(groupId);
     if (it != _groups.end()) {
         delete it->second;
         _groups.erase(it);
-        sendResponse(ip, port, "OK");
+        sendResponse(ip, port, header + " OK");
         printf("[REMOVE_GROUP] ID=%s\n", groupId.c_str());
     } else {
-        sendResponse(ip, port, "ERROR: Group not found");
+        sendResponse(ip, port, header + " ERROR: Group not found");
     }
 }
 
-void CmpServer::processJoinGroup(const std::vector<std::string>& tokens, const std::string& ip, int port) {
-    // joinGroup <groupId> <sessionId>
-    if (tokens.size() < 3) return;
-    std::string groupId = tokens[1];
-    std::string sessionId = tokens[2];
+void CmpServer::processJoinGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header) {
+    if (tokens.size() < 8) return;
+    std::string groupId = tokens[6];
+    std::string sessionId = tokens[7];
     
     PAutoLock lock(_mutex);
     auto groupIt = _groups.find(groupId);
     auto sessionIt = _sessions.find(sessionId);
     
-    // Idempotency: If already joined, return OK
     if (groupIt != _groups.end() && groupIt->second->hasMember(sessionId)) {
-        sendResponse(ip, port, "OK");
+        sendResponse(ip, port, header + " OK");
         printf("[JOIN_GROUP] Group=%s Session=%s (Already joined)\n", groupId.c_str(), sessionId.c_str());
         return;
     }
 
     if (groupIt == _groups.end()) {
-        sendResponse(ip, port, "ERROR: Group not found");
+        sendResponse(ip, port, header + " ERROR: Group not found");
         return;
     }
     if (sessionIt == _sessions.end()) {
-        sendResponse(ip, port, "ERROR: Session not found");
+        sendResponse(ip, port, header + " ERROR: Session not found");
         return;
     }
     
     groupIt->second->addMember(sessionId, sessionIt->second);
     sessionIt->second->setGroup(groupIt->second);
     
-    sendResponse(ip, port, "OK");
+    sendResponse(ip, port, header + " OK");
     printf("[JOIN_GROUP] Group=%s Session=%s\n", groupId.c_str(), sessionId.c_str());
 }
 
-void CmpServer::processLeaveGroup(const std::vector<std::string>& tokens, const std::string& ip, int port) {
-     // leaveGroup <groupId> <sessionId>
-    if (tokens.size() < 3) return;
-    std::string groupId = tokens[1];
-    std::string sessionId = tokens[2];
+void CmpServer::processLeaveGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header) {
+    if (tokens.size() < 8) return;
+    std::string groupId = tokens[6];
+    std::string sessionId = tokens[7];
     
     PAutoLock lock(_mutex);
     auto groupIt = _groups.find(groupId);
     auto sessionIt = _sessions.find(sessionId);
     
     if (groupIt == _groups.end()) {
-        sendResponse(ip, port, "ERROR: Group not found");
+        sendResponse(ip, port, header + " ERROR: Group not found");
         return;
     }
     
@@ -323,11 +324,12 @@ void CmpServer::processLeaveGroup(const std::vector<std::string>& tokens, const 
         sessionIt->second->setGroup(NULL);
     }
     
-    sendResponse(ip, port, "OK");
+    sendResponse(ip, port, header + " OK");
     printf("[LEAVE_GROUP] Group=%s Session=%s\n", groupId.c_str(), sessionId.c_str());
 }
 
 void CmpServer::sendResponse(const std::string& ip, int port, const std::string& msg) {
+    // Send back to origin (which is CSP Port)
     struct sockaddr_in addr;
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = inet_addr(ip.c_str());
@@ -348,25 +350,21 @@ void CmpServer::loadConfig() {
                 if (strcmp(key, "RtpIp") == 0) _rtpIp = val;
                 if (strcmp(key, "ServerIp") == 0) _serverIp = val;
                 if (strcmp(key, "ServerPort") == 0) _serverPort = atoi(val);
-                if (strcmp(key, "CspIp") == 0) _cspIp = val;
-                if (strcmp(key, "CspPort") == 0) _cspPort = atoi(val);
+                // CspIp/Port removed from config by user request
             }
         }
         fclose(fp);
     }
-    printf("Config: RtpStartPort=%d, RtpPoolSize=%d, RtpIp=%s, ServerIp=%s, ServerPort=%d, CspIp=%s, CspPort=%d\n", 
-           _rtpStartPort, _rtpPoolSize, _rtpIp.c_str(), _serverIp.c_str(), _serverPort, _cspIp.c_str(), _cspPort);
+    printf("Config: RtpStartPort=%d, RtpPoolSize=%d, RtpIp=%s, ServerIp=%s, ServerPort=%d\n", 
+           _rtpStartPort, _rtpPoolSize, _rtpIp.c_str(), _serverIp.c_str(), _serverPort);
 }
 
 void CmpServer::initResourcePool() {
-    // Each resource needs Audio RTP, RTCP (Port+1), Video RTP (Port+2), Video RTCP (Port+3) -> Skip 4
     int currentPort = _rtpStartPort;
     for (int i = 0; i < _rtpPoolSize; ++i) {
         std::string name = formatStr("InActiveRtp_%d", i);
         PRtpTrans* rtp = new PRtpTrans(name);
         
-        // Pre-bind sockets
-        // Using _rtpIp for bind
         if (rtp->init(_rtpIp, currentPort, currentPort + 2)) {
              _resourcePool.push_back(rtp);
              _freeResources.push_back(rtp);
@@ -379,28 +377,12 @@ void CmpServer::initResourcePool() {
     printf("Initialized %lu resources\n", _resourcePool.size());
 }
 
-#include "PRtpHandler.h" // Need access to CRtpSocket methods if we were to inspect ports, but PRtpTrans encapsulates it.
-// To get ports from PRtpTrans, we might need a getter. 
-// Ah, PRtpTrans::init binds the ports. We know the ports because we assigned them.
-// But we need to return them in allocResource.
-// Let's modify PRtpTrans to store its bound ports or just calculate them here?
-// We can calculate them based on index or store in map?
-// Actually PRtpTrans stores _portLoc. We can add a getter or just trust our assignment.
-// We assigned currentPort and currentPort + 2.
-// Wait, we need to map PRtpTrans* back to ports or store ports in PRtpTrans.
-// Let's assume we can add getLocalPort() to PRtpTrans.
-
 PRtpTrans* CmpServer::allocResource(std::string& rtpIp, int& rtpPort, int& videoPort) {
-    // Lock is held by caller (processAdd)
     if (_freeResources.empty()) return NULL;
     
     PRtpTrans* rtp = _freeResources.back();
     _freeResources.pop_back();
     
-    // We need to retrieve the ports this RTP was initialized with.
-    // For now, let's add a getter to PRtpTrans or just hack it
-    // Better to add getLocalPort() to PRtpTrans.h
-    // Assuming we will add it.
     rtpIp = _rtpIp; 
     rtpPort = rtp->getLocalPort(); 
     videoPort = rtp->getLocalVideoPort();
@@ -409,12 +391,5 @@ PRtpTrans* CmpServer::allocResource(std::string& rtpIp, int& rtpPort, int& video
 }
 
 void CmpServer::freeResource(PRtpTrans* rtp) {
-    // Lock is held by caller
-    // Reset remote?
-    // rtp->final()? No, we want to keep it bound.
-    // Maybe rtp->reset()?
-    // We just setRmt to 0/empty?
-    // For now just put back to pool.
     _freeResources.push_back(rtp);
 }
-

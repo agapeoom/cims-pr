@@ -45,6 +45,7 @@ public:
     uint16_t *m_piPort;
 
     int m_iStartPort;
+    std::string m_strLocalIp;
     bool m_bStop;
     uint8_t m_iSocketCount;
 
@@ -52,7 +53,7 @@ public:
     void Close();
 
     void CloseSocket();
-    void SetIpPort( int iIndex, uint32_t iIp, uint16_t sPort );
+    void SetIpPort( int iIndex, uint32_t iIp, uint16_t sPort, int iPeerIdx = 0 );
     void SetIpPort( int iIndex, IN6_ADDR *psttAddr, uint16_t sPort );
     void ReSetIPPort();
     bool Send( int iIndex, char *pszPacket, int iPacketLen );
@@ -77,14 +78,14 @@ public:
     bool ReSetIpPort( int iPort );
 
     void GetString( CMonitorString &strBuf );
+    
+    // [FIX] Thread-safe wrappers
+    bool SetIpPort( int iPort, int iIndex, uint32_t iIp, uint16_t sPort, int iPeerIdx = 0 );
+    bool GetLocalIp( int iPort, std::string &strLocalIp );
 
 private:
     RTP_MAP m_clsMap;
     CSipMutex m_clsMutex;
-
-    int m_iStartPort;
-
-    bool CreatePort( CRtpInfo &clsInfo, int iStart, int iEnd );
 };
 
 extern CRtpMap gclsRtpMap;

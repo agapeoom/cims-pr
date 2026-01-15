@@ -1,6 +1,6 @@
 <Setup>
 	<Sip>
-		<LocalIp>0.0.0.0</LocalIp>
+		<LocalIp>192.168.0.159</LocalIp>
 		<UdpPort>5060</UdpPort>
 		<UdpThreadCount>1</UdpThreadCount>
 		<TcpPort>25061</TcpPort>
@@ -17,10 +17,9 @@
 	</Sip>
 	<RtpRelay>
 		<UseRtpRelay>true</UseRtpRelay>
-		<BeginPort>10000</BeginPort>
-		<EndPort>12000</EndPort>
-		<CmpIp>127.0.0.1</CmpIp>
+		<CmpIp>192.168.0.159</CmpIp>
 		<CmpPort>9000</CmpPort>
+		<LocalCmpIp>192.168.0.159</LocalCmpIp>
 		<LocalCmpPort>9001</LocalCmpPort>
 	</RtpRelay>
 	<Log>

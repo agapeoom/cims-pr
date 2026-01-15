@@ -1,18 +1,32 @@
 #include "CmpClient.h"
+#include <chrono>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <cstring>
 #include <sstream>
+#include <vector>
 #include "Log.h"
 
-CCmpClient::CCmpClient() : m_iSocket(-1), m_iCmpPort(0) {
+CCmpClient::CCmpClient() : m_iCmpPort(0), m_hSocket(-1), m_bKeepAliveRunning(false), m_bRecvRunning(false), m_iNextTransId(1), m_bConnected(false) {
 }
 
 CCmpClient::~CCmpClient() {
-    if (m_iSocket != -1) {
-        close(m_iSocket);
+    m_bKeepAliveRunning = false;
+    if (m_threadKeepAlive.joinable()) {
+        m_threadKeepAlive.join();
+    }
+    
+    m_bRecvRunning = false;
+    if (m_hSocket != -1) {
+        shutdown(m_hSocket, SHUT_RDWR);
+        close(m_hSocket);
+        m_hSocket = -1;
+    }
+
+    if (m_threadRecv.joinable()) {
+        m_threadRecv.join();
     }
 }
 
@@ -22,13 +36,14 @@ CCmpClient& CCmpClient::GetInstance() {
 }
 
 bool CCmpClient::Init(const std::string& strCmpIp, int iCmpPort, int iLocalPort) {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    // std::lock_guard<std::mutex> lock(m_mutex); // No global mutex needed for init if called once
     m_strCmpIp = strCmpIp;
     m_iCmpPort = iCmpPort;
+    m_iLocalCmpPort = iLocalPort;
 
-    if (m_iSocket == -1) {
-        m_iSocket = socket(AF_INET, SOCK_DGRAM, 0);
-        if (m_iSocket < 0) {
+    if (m_hSocket == -1) {
+        m_hSocket = socket(AF_INET, SOCK_DGRAM, 0);
+        if (m_hSocket < 0) {
             CLog::Print(LOG_ERROR, "CmpClient::Init socket error");
             return false;
         }
@@ -37,28 +52,46 @@ bool CCmpClient::Init(const std::string& strCmpIp, int iCmpPort, int iLocalPort)
         memset(&localAddr, 0, sizeof(localAddr));
         localAddr.sin_family = AF_INET;
         localAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-        localAddr.sin_port = htons(iLocalPort);
+        localAddr.sin_port = htons(m_iLocalCmpPort);
 
-        if (bind(m_iSocket, (struct sockaddr*)&localAddr, sizeof(localAddr)) < 0) {
-             CLog::Print(LOG_ERROR, "CmpClient::Init bind error port=%d", iLocalPort);
-             // Don't return false, maybe we can still send? But receive will fail.
-             // Let's log error but continue for now? No, binding is important for bidirectional.
-             close(m_iSocket);
-             m_iSocket = -1;
-             return false;
+        if (bind(m_hSocket, (struct sockaddr*)&localAddr, sizeof(localAddr)) < 0) {
+            CLog::Print(LOG_ERROR, "CmpClient::Init bind error port=%d", m_iLocalCmpPort);
+            close(m_hSocket);
+            m_hSocket = -1;
+            return false;
         }
         
-        // Set timeout
-        struct timeval tv;
-        tv.tv_sec = 1; // 1 second timeout
-        tv.tv_usec = 0;
-        setsockopt(m_iSocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+        // Start Recv Thread
+        m_bRecvRunning = true;
+        m_threadRecv = std::thread(&CCmpClient::RecvLoop, this);
     }
+
+    if (!m_bKeepAliveRunning) {
+        m_bKeepAliveRunning = true;
+        m_threadKeepAlive = std::thread(&CCmpClient::KeepAliveLoop, this);
+    }
+
     return true;
 }
 
-bool CCmpClient::SendCommand(const std::string& strCmd, std::string& strResponse) {
-    if (m_iSocket == -1) return false;
+// Protocol: TRANS_ID CSP_ID CSP_SESS_ID CMP_ID CMP_SESS_ID CMD PAYLOAD...
+// Example: 1001 CSP_MAIN sess_1 CMP_MAIN 0 add 1.2.3.4 1000 0 0
+// Response: 1001 CSP_MAIN sess_1 CMP_MAIN 0 OK ...
+bool CCmpClient::SendRequestAndWait(const std::string& strPayload, std::string& strResponse) {
+    if (m_hSocket == -1) return false;
+
+    unsigned int transId;
+    Transaction* pTrans = new Transaction();
+    {
+        std::lock_guard<std::mutex> lock(m_mutexTrans);
+        transId = m_iNextTransId++;
+        pTrans->id = transId;
+        m_mapTransactions[transId] = pTrans;
+    }
+
+    // Construct Packet
+    // Header: TRANS_ID
+    std::string strPacket = std::to_string(transId) + " " + strPayload;
 
     struct sockaddr_in servaddr;
     memset(&servaddr, 0, sizeof(servaddr));
@@ -66,86 +99,184 @@ bool CCmpClient::SendCommand(const std::string& strCmd, std::string& strResponse
     servaddr.sin_port = htons(m_iCmpPort);
     servaddr.sin_addr.s_addr = inet_addr(m_strCmpIp.c_str());
 
-    ssize_t n = sendto(m_iSocket, strCmd.c_str(), strCmd.length(), 0, (const struct sockaddr*)&servaddr, sizeof(servaddr));
+    ssize_t n = sendto(m_hSocket, strPacket.c_str(), strPacket.length(), 0, (const struct sockaddr*)&servaddr, sizeof(servaddr));
     if (n < 0) {
-        CLog::Print(LOG_ERROR, "CmpClient::SendCommand sendto error: %s", strCmd.c_str());
+        CLog::Print(LOG_ERROR, "CmpClient::SendRequest command sendto error");
+        std::lock_guard<std::mutex> lock(m_mutexTrans);
+        m_mapTransactions.erase(transId);
+        delete pTrans;
         return false;
     }
 
-    char buffer[1024];
-    socklen_t len = sizeof(servaddr);
-    n = recvfrom(m_iSocket, buffer, sizeof(buffer)-1, 0, (struct sockaddr*)&servaddr, &len);
-    if (n < 0) {
-        CLog::Print(LOG_ERROR, "CmpClient::SendCommand recvfrom timeout/error: %s", strCmd.c_str());
-        return false;
-    }
-    buffer[n] = '\0';
-    strResponse = buffer;
-    
-    // Check for OK
-    if (strResponse.find("OK") != 0) {
-        CLog::Print(LOG_ERROR, "CmpClient::SendCommand Error Response: %s -> %s", strCmd.c_str(), strResponse.c_str());
-        return false;
-    }
+    // Wait
+    // Wait
+    bool bResult = false;
+    {
+        std::unique_lock<std::mutex> lock(pTrans->mutex);
+        if (pTrans->cv.wait_for(lock, std::chrono::seconds(3), [&]{ return pTrans->bCompleted; })) {
+            strResponse = pTrans->strResponse;
+            bResult = true;
+        } else {
+            CLog::Print(LOG_ERROR, "CmpClient::SendRequest timeout");
+            bResult = false;
+        }
+    } // lock unlocked here (Crucial for Deadlock prevention and preventing SegFault on delete)
 
-    return true;
+    {
+        std::lock_guard<std::mutex> mapLock(m_mutexTrans);
+        m_mapTransactions.erase(transId);
+    }
+    delete pTrans;
+    return bResult;
 }
+
+void CCmpClient::RecvLoop() {
+    char buffer[4096];
+    struct sockaddr_in cliaddr;
+    socklen_t len;
+
+    while (m_bRecvRunning) {
+        len = sizeof(cliaddr);
+        int n = recvfrom(m_hSocket, buffer, sizeof(buffer)-1, 0, (struct sockaddr*)&cliaddr, &len);
+        if (n > 0) {
+            buffer[n] = '\0';
+            std::string strPacket = buffer;
+            std::string strIp = inet_ntoa(cliaddr.sin_addr);
+            int iPort = ntohs(cliaddr.sin_port);
+            OnPacketReceived(strPacket, strIp, iPort);
+        }
+    }
+}
+
+void CCmpClient::OnPacketReceived(const std::string& strPacket, const std::string& strIp, int iPort) {
+    // Parse TRANS_ID logic
+    std::stringstream ss(strPacket);
+    unsigned int transId;
+    if (!(ss >> transId)) {
+        CLog::Print(LOG_ERROR, "CmpClient::OnPacketReceived Invalid Packet: %s", strPacket.c_str());
+        return;
+    }
+    
+    // Remaining is Body
+    // Reconstruct body strictly? Or just take what's left?
+    // getline gets rest of line but leading space issue.
+    // Let's assume response starts after TransID space.
+    size_t pos = strPacket.find(' ');
+    std::string strBody = (pos != std::string::npos) ? strPacket.substr(pos + 1) : "";
+
+    std::lock_guard<std::mutex> lock(m_mutexTrans);
+    auto it = m_mapTransactions.find(transId);
+    if (it != m_mapTransactions.end()) {
+        Transaction* pTrans = it->second;
+        std::lock_guard<std::mutex> transLock(pTrans->mutex);
+        pTrans->strResponse = strBody;
+        pTrans->bCompleted = true;
+        pTrans->cv.notify_one();
+    } else {
+        // Async Notification or unknown TransID
+        // Just log for now as we don't handle async callbacks yet
+        printf("CmpClient Async RX: %s\n", strPacket.c_str());
+    }
+}
+
+// FORMAT: CSP_ID CSP_SESS_ID CMP_ID CMP_SESS_ID CMD ...
+// Using defaults: CSP_MAIN, <sessId>, CMP_MAIN, 0
 
 bool CCmpClient::AddSession(const std::string& strSessionId, std::string& strLocalIp, int& iLocalPort, int& iLocalVideoPort) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    // Initial ADD without remote info (placeholders)
-    // ADD <id> <rmt_ip> <rmt_port> [rmt_video_port]
-    // Use 0.0.0.0 and 0 for placeholders
-    std::string strCmd = "add " + strSessionId + " 0.0.0.0 0 0";
+    // OLD: add <id> ...
+    // NEW: CSP_MAIN <sessId> CMP_MAIN 0 add ... (TransID added by SendRequest)
+    
+    std::string strPayload = "CSP_MAIN " + strSessionId + " CMP_MAIN 0 add " + strSessionId + " 0.0.0.0 0 0 0";
     std::string strResp;
     
-    if (!SendCommand(strCmd, strResp)) return false;
+    printf("CmpClient::AddSession: %s\n", strPayload.c_str()); // Debug
 
-    // Parse OK <loc_ip> <loc_port> <loc_video_port>
+    if (!SendRequestAndWait(strPayload, strResp)) return false;
+
+    // Response Body: CSP_MAIN <sessId> CMP_MAIN <cmpSess> OK <ip> <port> <vport>
+    // Need to parse header first?
+    // The response body handled by OnPacketReceived is everything after TransId.
+    // So strResp = "CSP_MAIN sess_1 CMP_MAIN 0 OK locIp locPort locVPort"
+    
     std::stringstream ss(strResp);
-    std::string ok;
-    ss >> ok >> strLocalIp >> iLocalPort >> iLocalVideoPort;
+    std::string cspId, cspSess, cmpId, cmpSess, status;
+    ss >> cspId >> cspSess >> cmpId >> cmpSess >> status;
+    
+    if (status != "OK") return false;
+    
+    ss >> strLocalIp >> iLocalPort >> iLocalVideoPort;
     return true;
 }
 
-bool CCmpClient::UpdateSession(const std::string& strSessionId, const std::string& strRmtIp, int iRmtPort, int iRmtVideoPort, std::string& strLocalIp, int& iLocalPort) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    std::string strCmd = "add " + strSessionId + " " + strRmtIp + " " + std::to_string(iRmtPort) + " " + std::to_string(iRmtVideoPort);
+bool CCmpClient::UpdateSession(const std::string& strSessionId, const std::string& strRmtIp, int iRmtPort, int iRmtVideoPort, int iPeerIdx, std::string& strLocalIp, int& iLocalPort) {
+    std::string strPayload = "CSP_MAIN " + strSessionId + " CMP_MAIN 0 add " + strSessionId + " " + strRmtIp + " " + std::to_string(iRmtPort) + " " + std::to_string(iRmtVideoPort) + " " + std::to_string(iPeerIdx);
     std::string strResp;
     
-    if (!SendCommand(strCmd, strResp)) return false;
+    printf("CmpClient::UpdateSession: %s\n", strPayload.c_str());
+
+    if (!SendRequestAndWait(strPayload, strResp)) return false;
     
-    int iLocalVideoPort;
+    // Parse
     std::stringstream ss(strResp);
-    std::string ok;
-    ss >> ok >> strLocalIp >> iLocalPort >> iLocalVideoPort;
+    std::string cspId, cspSess, cmpId, cmpSess, status;
+    ss >> cspId >> cspSess >> cmpId >> cmpSess >> status;
+    
+    if (status != "OK") return false;
+    // Assuming same return format
+    int iLocalVideoPort;
+    ss >> strLocalIp >> iLocalPort >> iLocalVideoPort;
     return true;
 }
 
 bool CCmpClient::RemoveSession(const std::string& strSessionId) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    std::string strCmd = "remove " + strSessionId;
+    std::string strPayload = "CSP_MAIN " + strSessionId + " CMP_MAIN 0 remove " + strSessionId;
     std::string strResp;
-    return SendCommand(strCmd, strResp);
+    printf("CmpClient::RemoveSession: %s\n", strPayload.c_str());
+    return SendRequestAndWait(strPayload, strResp);
 }
 
 bool CCmpClient::AddGroup(const std::string& strGroupId) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    std::string strCmd = "addgroup " + strGroupId;
+    std::string strPayload = "CSP_MAIN 0 CMP_MAIN 0 addgroup " + strGroupId;
     std::string strResp;
-    return SendCommand(strCmd, strResp);
+    return SendRequestAndWait(strPayload, strResp);
 }
 
 bool CCmpClient::JoinGroup(const std::string& strGroupId, const std::string& strSessionId) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    std::string strCmd = "joingroup " + strGroupId + " " + strSessionId;
+    std::string strPayload = "CSP_MAIN " + strSessionId + " CMP_MAIN 0 joingroup " + strGroupId + " " + strSessionId;
     std::string strResp;
-    return SendCommand(strCmd, strResp);
+    return SendRequestAndWait(strPayload, strResp);
 }
 
 bool CCmpClient::LeaveGroup(const std::string& strGroupId, const std::string& strSessionId) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    std::string strCmd = "leavegroup " + strGroupId + " " + strSessionId;
+    std::string strPayload = "CSP_MAIN " + strSessionId + " CMP_MAIN 0 leavegroup " + strGroupId + " " + strSessionId;
     std::string strResp;
-    return SendCommand(strCmd, strResp);
+    return SendRequestAndWait(strPayload, strResp);
+}
+
+void CCmpClient::KeepAliveLoop() {
+    while (m_bKeepAliveRunning) {
+        std::string strResp;
+        bool bSuccess = SendRequestAndWait("CSP_MAIN 0 CMP_MAIN 0 ALIVE", strResp);
+        
+        // Simple success check. Could parse response for "OK" if needed.
+        if (bSuccess) {
+            if (!m_bConnected) {
+                m_bConnected = true;
+                if (m_fnConnectionCallback) {
+                    m_fnConnectionCallback(true);
+                }
+                CLog::Print(LOG_INFO, "CMP Connected");
+            }
+        } else {
+            if (m_bConnected) {
+                m_bConnected = false;
+                if (m_fnConnectionCallback) {
+                    m_fnConnectionCallback(false);
+                }
+                CLog::Print(LOG_INFO, "CMP Disconnected");
+            }
+        }
+        
+        std::this_thread::sleep_for(std::chrono::seconds(3));
+    }
 }

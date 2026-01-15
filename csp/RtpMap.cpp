@@ -115,7 +115,7 @@ void CRtpInfo::CloseSocket() {
  * @param iIp			SIP 클라이언트의 RTP IP 주소
  * @param sPort		SIP 클라이언트의 RTP 포트 번호
  */
-void CRtpInfo::SetIpPort( int iIndex, uint32_t iIp, uint16_t sPort ) {
+void CRtpInfo::SetIpPort( int iIndex, uint32_t iIp, uint16_t sPort, int iPeerIdx ) {
     m_piIp[iIndex] = iIp;
     m_piPort[iIndex] = sPort;
     
@@ -130,9 +130,16 @@ void CRtpInfo::SetIpPort( int iIndex, uint32_t iIp, uint16_t sPort ) {
         
         std::string locIp;
         int locPort, locVideoPort; // dummy
+        
         // Assuming video port (sPort+2) or just 0 for now if not available here. 
         // We only get audio port here.
-        gclsCmpClient.UpdateSession(m_strSessionId, szIp, sPort, 0, locIp, locPort);
+        // However, we should try to get the video port if it was set previously (e.g. via separate SetIpPort call for index 2)
+        int iRmtVideoPort = 0;
+        if (m_iSocketCount > 2) {
+            iRmtVideoPort = m_piPort[2];
+        }
+
+        gclsCmpClient.UpdateSession(m_strSessionId, szIp, sPort, iRmtVideoPort, iPeerIdx, locIp, locPort);
     }
 }
 
@@ -175,7 +182,7 @@ bool CRtpInfo::Send( int iIndex, char *pszPacket, int iPacketLen ) {
     }
 }
 
-CRtpMap::CRtpMap() : m_iStartPort( 0 ) {
+CRtpMap::CRtpMap() {
 }
 
 CRtpMap::~CRtpMap() {
@@ -190,12 +197,18 @@ CRtpMap::~CRtpMap() {
 int CRtpMap::CreatePort( int iSocketCount ) {
     bool bRes = false;
     CRtpInfo clsInfo( iSocketCount );
-
+    
     // Ensure CmpClient is init
     static bool bInit = false;
     if (!bInit) {
         gclsCmpClient.Init(gclsSetup.m_strCmpIp, gclsSetup.m_iCmpPort, gclsSetup.m_iLocalCmpPort);
         bInit = true;
+    }
+
+    // [FIX] Allocate valid arrays (m_piIp, etc.) to prevent crash in SetIpPort
+    if (!clsInfo.Create()) {
+        CLog::Print( LOG_ERROR, "Create RtpPort memory allocation failed" );
+        return -1;
     }
 
     // Generate Session ID (e.g. uuid or just incrementing int? For now, incrementing int based on start port concept)
@@ -213,6 +226,7 @@ int CRtpMap::CreatePort( int iSocketCount ) {
     if (gclsCmpClient.AddSession(strSessionId, strLocalIp, iLocalPort, iLocalVideoPort)) {
         // CmpServer returned allocated ports
         clsInfo.m_iStartPort = iLocalPort; 
+        clsInfo.m_strLocalIp = strLocalIp; // Store Allocated IP
         // We might need to store video port too if RtpMap supports it, but RtpMap seems to assume contiguous ports.
         // The original logic expected contiguous ports starting at m_iStartPort.
         // CMP returns audio port. Video is audio + 2.
@@ -290,7 +304,9 @@ bool CRtpMap::Delete( int iPort ) {
     m_clsMutex.acquire();
     itMap = m_clsMap.find( iPort );
     if ( itMap != m_clsMap.end() ) {
-        // itMap->second.Close(); // No local sockets to close
+        // [FIX] Ensure resources are freed
+        itMap->second.Close(); 
+        
         gclsCmpClient.RemoveSession(itMap->second.m_strSessionId);
         m_clsMap.erase( itMap );
         bRes = true;
@@ -352,32 +368,28 @@ void CRtpMap::GetString( CMonitorString &strBuf ) {
     m_clsMutex.release();
 }
 
-/**
- * @ingroup CspServer
- * @brief RTP relay 에 사용할 UDP 소켓들을 생성한다.
- * @param clsInfo RTP relay 정보 저장 객체
- * @param iStart	UDP 소켓 생성 시작 포트
- * @param iEnd		UDP 소켓 생성 종료 포트
- * @returns 성공하면 true 를 리턴하고 실패하면 false 를 리턴한다.
- */
-bool CRtpMap::CreatePort( CRtpInfo &clsInfo, int iStart, int iEnd ) {
-    for ( int iPort = iStart; iPort < iEnd; iPort += clsInfo.m_iSocketCount ) {
-        bool bError = false;
 
-        for ( int i = 0; i < clsInfo.m_iSocketCount; ++i ) {
-            clsInfo.m_phSocket[i] = UdpListen( iPort + i, NULL, gclsSetup.m_bIpv6 );
-            if ( clsInfo.m_phSocket[i] == INVALID_SOCKET ) {
-                bError = true;
-                clsInfo.CloseSocket();
-                break;
-            }
-        }
 
-        if ( bError == false ) {
-            clsInfo.m_iStartPort = iPort;
-            return true;
-        }
+bool CRtpMap::SetIpPort( int iPort, int iIndex, uint32_t iIp, uint16_t sPort, int iPeerIdx ) {
+    m_clsMutex.acquire();
+    bool bRes = false;
+    RTP_MAP::iterator itMap = m_clsMap.find( iPort );
+    if ( itMap != m_clsMap.end() ) {
+        itMap->second.SetIpPort(iIndex, iIp, sPort, iPeerIdx);
+        bRes = true;
     }
+    m_clsMutex.release();
+    return bRes;
+}
 
-    return false;
+bool CRtpMap::GetLocalIp( int iPort, std::string &strLocalIp ) {
+    m_clsMutex.acquire();
+    bool bRes = false;
+    RTP_MAP::iterator itMap = m_clsMap.find( iPort );
+    if ( itMap != m_clsMap.end() ) {
+        strLocalIp = itMap->second.m_strLocalIp;
+        bRes = true;
+    }
+    m_clsMutex.release();
+    return bRes;
 }

@@ -7,6 +7,7 @@
 
 #include "XmlGroup.h"
 #include <map>
+#include <functional>
 
 typedef std::map<std::string, CXmlGroup> GROUP_MAP;
 
@@ -30,6 +31,8 @@ public:
 
     /** Clear all groups */
     void Clear();
+
+    void IterateInternal( std::function<void(const CXmlGroup&)> fnCallback );
 
 private:
     GROUP_MAP m_clsMap;

@@ -18,6 +18,7 @@
 #include "CspServer.h"
 
 #include "CallMap.h"
+#include "CmpClient.h"
 #include "CspServerDefine.h"
 #include "CspServerVersion.h"
 #include "Directory.h"
@@ -33,6 +34,7 @@
 #include "SipUserAgentVersion.h"
 #include "UserMap.h"
 #include "GroupMap.h"
+#include "GroupCallService.h"
 
 bool gbFork = true;
 /**
@@ -83,6 +85,19 @@ int ServiceMain() {
     ServerSignal();
     printf( "Loading SipServerMap...\n" );
     gclsSipServerMap.Load();
+
+    // [FIX] Init CMP Client before loading groups (which triggers AddGroup)
+    if ( !gclsCmpClient.Init( gclsSetup.m_strCmpIp, gclsSetup.m_iCmpPort, gclsSetup.m_iLocalCmpPort ) ) {
+        CLog::Print( LOG_ERROR, "CmpClient Init failed" );
+        printf( "CmpClient Init failed\n" );
+    }
+
+    // [FIX] Wire Connection Callback and Start Monitor
+    gclsCmpClient.SetConnectionCallback([](bool bConnected) {
+        gclsGroupCallService.OnCmpStatusChanged(bConnected);
+    });
+    gclsGroupCallService.StartMonitor();
+
     if ( gclsSetup.m_strGroupXmlFolder.length() > 0 ) {
         printf( "Loading GroupMap from %s...\n", gclsSetup.m_strGroupXmlFolder.c_str() );
         gclsGroupMap.Load( gclsSetup.m_strGroupXmlFolder.c_str() );
@@ -127,6 +142,7 @@ int ServiceMain() {
     }
     gclsCallMap.StopCallAll();
     gclsTransCallMap.StopCallAll();
+    gclsGroupCallService.StopMonitor();
     for ( int i = 0; i < 20; ++i ) {
         if ( gclsUserAgent.GetCallCount() == 0 ) {
             break;

@@ -15,12 +15,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA 
  */
+#include "GroupCallService.h"
 
 /**
  * @ingroup CspServer
- * @brief SIP ÀÀ´ä ¸Þ½ÃÁö¿¡ WWW-Authenticate Çì´õ¸¦ Ãß°¡ÇÑ´Ù.
- * @param psttResponse SIP ÀÀ´ä ¸Þ½ÃÁö
- * @returns ¼º°øÇÏ¸é true ¸¦ ¸®ÅÏÇÏ°í ½ÇÆÐÇÏ¸é false ¸¦ ¸®ÅÏÇÑ´Ù.
+ * @brief SIP ì‘ë‹µ ë©”ì‹œì§€ì— WWW-Authenticate í—¤ë”ë¥¼ ì¶”ê°€í•œë‹¤.
+ * @param psttResponse SIP ì‘ë‹µ ë©”ì‹œì§€
+ * @returns ì„±ê³µí•˜ë©´ true ë¥¼ ë¦¬í„´í•˜ê³  ì‹¤íŒ¨í•˜ë©´ false ë¥¼ ë¦¬í„´í•œë‹¤.
  */
 bool AddChallenge( CSipMessage * psttResponse )
 {
@@ -45,9 +46,9 @@ bool AddChallenge( CSipMessage * psttResponse )
 
 /**
  * @ingroup CspServer
- * @brief SIP 401 ÀÀ´ä ¸Þ½ÃÁö¸¦ Àü¼ÛÇÑ´Ù.
- * @param pclsMessage SIP ¿äÃ» ¸Þ½ÃÁö
- * @returns ¼º°øÇÏ¸é true ¸¦ ¸®ÅÏÇÏ°í ½ÇÆÐÇÏ¸é false ¸¦ ¸®ÅÏÇÑ´Ù.
+ * @brief SIP 401 ì‘ë‹µ ë©”ì‹œì§€ë¥¼ ì „ì†¡í•œë‹¤.
+ * @param pclsMessage SIP ìš”ì²­ ë©”ì‹œì§€
+ * @returns ì„±ê³µí•˜ë©´ true ë¥¼ ë¦¬í„´í•˜ê³  ì‹¤íŒ¨í•˜ë©´ false ë¥¼ ë¦¬í„´í•œë‹¤.
  */
 bool SendUnAuthorizedResponse( CSipMessage * pclsMessage )
 {
@@ -63,15 +64,15 @@ bool SendUnAuthorizedResponse( CSipMessage * pclsMessage )
 
 /** 
  * @ingroup CspServer
- * @brief	response °¡ À¯È¿ÇÑ °ªÀÎÁö °Ë»çÇÑ´Ù. 
- * @param	pszUserName	»ç¿ëÀÚ ¾ÆÀÌµð
+ * @brief	response ê°€ ìœ íš¨í•œ ê°’ì¸ì§€ ê²€ì‚¬í•œë‹¤. 
+ * @param	pszUserName	ì‚¬ìš©ìž ì•„ì´ë””
  * @param	pszRealm		realm
  * @param	pszNonce		nonce
  * @param	pszUri			uri
  * @param	pszResponse	response
- * @param	pszPassWord	ºñ¹Ð¹øÈ£
- * @param	pszMethod		SIP ¸Þ¼Òµå
- * @return	response ¹®ÀÚ¿­ÀÌ À¯È¿ÇÏ¸é true ¸¦ ¸®ÅÏÇÑ´Ù. ±×·¸Áö ¾ÊÀ¸¸é false ¸¦ ¸®ÅÏÇÑ´Ù.
+ * @param	pszPassWord	ë¹„ë°€ë²ˆí˜¸
+ * @param	pszMethod		SIP ë©”ì†Œë“œ
+ * @return	response ë¬¸ìžì—´ì´ ìœ íš¨í•˜ë©´ true ë¥¼ ë¦¬í„´í•œë‹¤. ê·¸ë ‡ì§€ ì•Šìœ¼ë©´ false ë¥¼ ë¦¬í„´í•œë‹¤.
  */
 bool CheckAuthorizationResponse( const char * pszUserName
 		, const char * pszRealm
@@ -106,7 +107,7 @@ bool CheckAuthorizationResponse( const char * pszUserName
 
 /**
  * @ingroup CspServer
- * @brief SIP ÀÎÁõ °á°ú
+ * @brief SIP ì¸ì¦ ê²°ê³¼
  */
 enum ECheckAuthResult
 {
@@ -118,12 +119,12 @@ enum ECheckAuthResult
 /**
  * @ingroup CspServer
  * @brief 
- * @param pclsCredential	SIP ÀÎÁõ Á¤º¸ ÀúÀå °´Ã¼
- * @param pszMethod				SIP ¸Þ¼Òµå
- * @param clsXmlUser			»ç¿ëÀÚ Á¤º¸ ÀúÀå °´Ã¼
- * @returns ÀÎÁõ¿¡ ¼º°øÇÏ¸é E_AUTH_OK ¸¦ ¸®ÅÏÇÑ´Ù.
- *					Á¸ÀçÇÏÁö ¾Ê´Â nonce ÀÎ °æ¿ì E_AUTH_NONCE_NOT_FOUND ¸¦ ¸®ÅÏÇÑ´Ù.
- *					±× ¿ÜÀÇ ¿À·ù´Â E_AUTH_ERROR ¸¦ ¸®ÅÏÇÑ´Ù.
+ * @param pclsCredential	SIP ì¸ì¦ ì •ë³´ ì €ìž¥ ê°ì²´
+ * @param pszMethod				SIP ë©”ì†Œë“œ
+ * @param clsXmlUser			ì‚¬ìš©ìž ì •ë³´ ì €ìž¥ ê°ì²´
+ * @returns ì¸ì¦ì— ì„±ê³µí•˜ë©´ E_AUTH_OK ë¥¼ ë¦¬í„´í•œë‹¤.
+ *					ì¡´ìž¬í•˜ì§€ ì•ŠëŠ” nonce ì¸ ê²½ìš° E_AUTH_NONCE_NOT_FOUND ë¥¼ ë¦¬í„´í•œë‹¤.
+ *					ê·¸ ì™¸ì˜ ì˜¤ë¥˜ëŠ” E_AUTH_ERROR ë¥¼ ë¦¬í„´í•œë‹¤.
  */
 ECheckAuthResult CheckAuthorization( CSipCredential * pclsCredential, const char * pszMethod, CXmlUser & clsXmlUser )
 {
@@ -138,10 +139,10 @@ ECheckAuthResult CheckAuthorization( CSipCredential * pclsCredential, const char
 
 /**
  * @ingroup CspServer
- * @brief SIP REGISTER ¿äÃ» ¸Þ½ÃÁö ¼ö½Å ÀÌº¥Æ® ÇÚµé·¯
- * @param iThreadId		SIP UDP ¾²·¹µå ¾ÆÀÌµð
- * @param pclsMessage SIP ¿äÃ» ¸Þ½ÃÁö
- * @returns SIP ¿äÃ» ¸Þ½ÃÁö¸¦ Ã³¸®ÇÏ¸é true ¸¦ ¸®ÅÏÇÏ°í ±×·¸Áö ¾ÊÀ¸¸é false ¸¦ ¸®ÅÏÇÑ´Ù.
+ * @brief SIP REGISTER ìš”ì²­ ë©”ì‹œì§€ ìˆ˜ì‹  ì´ë²¤íŠ¸ í•¸ë“¤ëŸ¬
+ * @param iThreadId		SIP UDP ì“°ë ˆë“œ ì•„ì´ë””
+ * @param pclsMessage SIP ìš”ì²­ ë©”ì‹œì§€
+ * @returns SIP ìš”ì²­ ë©”ì‹œì§€ë¥¼ ì²˜ë¦¬í•˜ë©´ true ë¥¼ ë¦¬í„´í•˜ê³  ê·¸ë ‡ì§€ ì•Šìœ¼ë©´ false ë¥¼ ë¦¬í„´í•œë‹¤.
  */
 bool CSipServer::RecvRequestRegister( int iThreadId, CSipMessage * pclsMessage )
 {
@@ -198,6 +199,7 @@ bool CSipServer::RecvRequestRegister( int iThreadId, CSipMessage * pclsMessage )
 	{
 		CSipFrom clsContact;
 
+                SelectUser( pclsMessage->m_clsFrom.m_clsUri.m_strUser.c_str(), clsXmlUser );
 		if( gclsUserMap.Insert( pclsMessage, &clsContact, &clsXmlUser ) )
 		{
 			CSipMessage * pclsResponse = pclsMessage->CreateResponseWithToTag( SIP_OK );
@@ -207,6 +209,10 @@ bool CSipServer::RecvRequestRegister( int iThreadId, CSipMessage * pclsMessage )
 			pclsResponse->AddHeader( "Expires", 3600 ); //by hak add.
 
 			gclsUserAgent.m_clsSipStack.SendSipMessage( pclsResponse );
+                        // [GROUP CALL AUTO JOIN]
+                        if ( !clsXmlUser.m_strGroupId.empty() ) {
+                             gclsGroupCallService.InviteMember( clsXmlUser.m_strId.c_str(), clsXmlUser.m_strGroupId.c_str() );
+                        }
 		}
 		else
 		{
