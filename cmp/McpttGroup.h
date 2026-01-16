@@ -58,7 +58,11 @@ public:
     void onRtpPacket(const std::string& ip, int port, char* buf, int len);
 
     // Called by PRtpTrans when a Video RTP packet is received
+    // Called by PRtpTrans when a Video RTP packet is received
     void onVideoRtpPacket(const std::string& ip, int port, char* buf, int len);
+
+    void updatePriorities(const std::map<std::string, int>& priorities);
+    void setDtmfConfig(bool enable, const std::string& pushDigit, const std::string& releaseDigit);
 
 private:
     void sendToAll(const char* data, int len, const std::string& excludeIp, int excludePort);
@@ -73,6 +77,7 @@ private:
         int port;
     };
     std::map<std::string, Peer> _members; // SessionID -> Peer
+    std::map<std::string, int> _priorities; // SessionID (UserId) -> Priority
     PRtpTrans* _sharedSession; // The shared RTP session
     
     // Floor State
@@ -80,6 +85,13 @@ private:
     std::string _floorOwnerSessionId;
     unsigned int _floorOwnerUserId;
 
+
+
+    // DTMF PTT Config
+    bool _dtmfEnable;
+    std::string _dtmfPushDigit;
+    std::string _dtmfReleaseDigit;
+    
     PMutex _mutex;
 };
 

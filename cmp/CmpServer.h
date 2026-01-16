@@ -28,6 +28,7 @@ protected:
 
     // Group Management
     void processAddGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header);
+    void processModifyGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header);
     void processRemoveGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header);
     void processJoinGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header);
     void processLeaveGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header);
@@ -56,6 +57,12 @@ private:
     // Server Config
     std::string _serverIp;
     int _serverPort;
+    
+    // DTMF PTT Config
+    int _enableDtmfPtt;
+    std::string _dtmfPushDigit;
+    std::string _dtmfReleaseDigit;
+
     std::string _configFile;
 
     std::vector<PRtpTrans*> _resourcePool; // Pre-allocated list

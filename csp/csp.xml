@@ -23,7 +23,7 @@
 		<LocalCmpPort>9001</LocalCmpPort>
 	</RtpRelay>
 	<Log>
-		<Folder>log</Folder>
+		<Folder>../log</Folder>
 		<Level Debug="true" Info="true" Network="true" Sql="true" />
 		<MaxSize>10000000</MaxSize>
 	</Log>

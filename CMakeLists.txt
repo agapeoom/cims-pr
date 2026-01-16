@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 2.8)
 Project("TGroup MPS Projcet Base" C CXX)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11 -Wall -Wextra -Werror")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11 -Wall -fpermissive -fPIC")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++17 -Wall -fpermissive -fPIC")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++14 -Wall -fpermissive")
 #------------------------------------------------------------------
 # Global definitions and include
@@ -14,7 +14,7 @@ add_definitions(-D_GNU_SOURCE -fpermissive)
 add_definitions(-D__STDC_CONSTANT_MACROS)
 add_definitions(-DUSING_POLL)
 add_definitions(-D_PALOGGER)
-ADD_COMPILE_OPTIONS( -g -Wall -std=c++11)
+ADD_COMPILE_OPTIONS( -g -Wall -std=c++17)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH};${PROJECT_SOURCE_DIR}/cmake)
 

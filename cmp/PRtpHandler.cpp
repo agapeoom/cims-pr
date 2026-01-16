@@ -61,15 +61,6 @@ bool PRtpTrans::final()
 
 bool PRtpTrans::setRmt(const std::string & ipRmt, unsigned int portRmt, unsigned int videoPortRmt, int peerIdx) {
     PAutoLock lock(_mutex);
-    
-    // Logic: 
-    // If peerIdx is provided (0 or 1), use it directly.
-    // If peerIdx is -1, fallback to "Smart Add":
-    //   If ip/port matches Peer 0, update it.
-    //   If ip/port matches Peer 1, update it.
-    //   If Peer 0 is empty, set Peer 0.
-    //   If Peer 0 set but mismatch, and Peer 1 empty, set Peer 1.
-    //   If both set, overwrite Peer 1 (Callee) default.
 
     int idx = peerIdx;
     
@@ -119,7 +110,6 @@ bool PRtpTrans::setRmt(const std::string & ipRmt, unsigned int portRmt, unsigned
             _videoRtcpSock.setRmt(ipRmt, videoPortRmt + 1);
         }
     }
-
     return true;
 }
 
@@ -189,7 +179,7 @@ bool PRtpTrans::proc()
         {
             PAutoLock lock(_mutex);
             len = _rtpSock.recv(pkt, sizeof(pkt), ipRmt, portRmt);
-            if (len > 0) {
+            if (len > 0) {               
                 if (_group) {
                     _group->onRtpPacket(ipRmt, portRmt, pkt, len);
                 } else {

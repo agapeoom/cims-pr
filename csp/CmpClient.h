@@ -9,6 +9,7 @@
 #include <condition_variable>
 #include <functional>
 #include "SipStackDefine.h"
+#include "XmlGroup.h"
 
 struct CmpSocket {
     int iSocket;
@@ -27,7 +28,8 @@ public:
     bool RemoveSession(const std::string& strSessionId);
 
 
-    bool AddGroup(const std::string& strGroupId, std::string& strIp, int& iPort);
+    bool AddGroup(const std::string& strGroupId, const std::vector<CXmlGroup::CGroupMember>& vecMembers, std::string& strIp, int& iPort);
+    bool ModifyGroup(const std::string& strGroupId, const std::vector<CXmlGroup::CGroupMember>& vecMembers);
     bool JoinGroup(const std::string& strGroupId, const std::string& strSessionId, const std::string& strIp, int iPort);
     bool LeaveGroup(const std::string& strGroupId, const std::string& strSessionId);
     bool RemoveGroup(const std::string& strGroupId);

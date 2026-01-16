@@ -2,8 +2,9 @@
     <Id>2000</Id>
     <Name>Sales Team</Name>
     <MemberList>
-        <Member>1001</Member>
-        <Member>1002</Member>
-        <Member>1003</Member>
+        <Member><Id>1001</Id><Priority>0</Priority></Member>
+        <Member><Id>1002</Id><Priority>1</Priority></Member>
+        <Member><Id>1003</Id><Priority>2</Priority></Member>
+        <Member><Id>1004</Id><Priority>2</Priority></Member>
     </MemberList>
 </Group>

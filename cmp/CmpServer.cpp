@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cctype>
 #include "PRtpHandler.h"
+#include "McpttGroup.h"
 
 CmpServer::CmpServer(const std::string& name, const std::string& configFile)
     : PModule(name), _running(false), _udpFd(-1), _configFile(configFile)
@@ -28,6 +29,8 @@ CmpServer::CmpServer(const std::string& name, const std::string& configFile)
 CmpServer::~CmpServer() {
     stopServer();
     for(auto const& [name, group] : _groups) {
+        // delete group; // PModule/destructor might be an issue. McpttGroup should be deleted clearly.
+        // Actually, _groups stores McpttGroup* which we new'd.
         delete group;
     }
     _groups.clear();
@@ -128,6 +131,8 @@ void CmpServer::handlePacket(char* buf, int len, const std::string& ip, int port
         processJoinGroup(tokens, ip, port, headerString);
     } else if (cmd == "leavegroup") {
         processLeaveGroup(tokens, ip, port, headerString);
+    } else if (cmd == "modifygroup") {
+        processModifyGroup(tokens, ip, port, headerString);
     }
 }
 
@@ -242,12 +247,32 @@ void CmpServer::processAlive(const std::vector<std::string>& tokens, const std::
 }
 
 void CmpServer::processAddGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header) {
-    if (tokens.size() < 7) return;
+    // CMD: addgroup 0 <groupId> <count> <mem1:prio1> ...
+    if (tokens.size() < 9) return;
     std::string groupId = tokens[6];
+    int count = std::stoi(tokens[7]);
     
+    std::map<std::string, int> priorities;
+    for (int i=0; i<count; ++i) {
+        if (8+i < tokens.size()) {
+            std::string token = tokens[8+i];
+            size_t pos = token.find(':');
+            if (pos != std::string::npos) {
+                std::string id = token.substr(0, pos);
+                int prio = std::stoi(token.substr(pos+1));
+                priorities[id] = prio;
+            }
+        }
+    }
+
     PAutoLock lock(_mutex);
     if (_groups.find(groupId) != _groups.end()) {
-        PRtpTrans* rtp = _sessions[groupId]; // Should exist if group exists
+        PRtpTrans* rtp = _sessions[groupId]; 
+        McpttGroup* group = _groups[groupId];
+        if (group) {
+             group->updatePriorities(priorities);
+        }
+        
         if (rtp) {
              std::string locIp = _rtpIp;
              int locPort = rtp->getLocalPort();
@@ -255,14 +280,12 @@ void CmpServer::processAddGroup(const std::vector<std::string>& tokens, const st
              sendResponse(ip, port, resp);
              return;
         }
-        // If Logic broken (Group exists, RTP missing), re-create?
     }
     
     std::string locIp = _rtpIp;
     int locPort = 0;
     int locVideoPort = 0;
     
-    // Allocate Shared RTP Session for Group
     PRtpTrans* rtp = allocResource(locIp, locPort, locVideoPort);
     if (!rtp) {
         sendResponse(ip, port, header + " ERROR: No resources");
@@ -277,6 +300,13 @@ void CmpServer::processAddGroup(const std::vector<std::string>& tokens, const st
     
     McpttGroup* group = new McpttGroup(groupId);
     group->setSharedSession(rtp);
+    group->updatePriorities(priorities); // Set priorities
+    
+    // [DTMF PTT]
+    if (_enableDtmfPtt) {
+        group->setDtmfConfig(true, _dtmfPushDigit, _dtmfReleaseDigit);
+    }
+    
     rtp->setGroup(group);
     
     addHandler(wname, rtp);
@@ -285,7 +315,36 @@ void CmpServer::processAddGroup(const std::vector<std::string>& tokens, const st
     
     std::string resp = header + " OK " + locIp + " " + std::to_string(locPort);
     sendResponse(ip, port, resp);
-    printf("[ADD_GROUP] ID=%s SharedPort=%d Worker=%s\n", groupId.c_str(), locPort, wname.c_str());
+    printf("[ADD_GROUP] ID=%s SharedPort=%d Worker=%s Members=%d\n", groupId.c_str(), locPort, wname.c_str(), count);
+}
+
+void CmpServer::processModifyGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header) {
+    if (tokens.size() < 9) return;
+    std::string groupId = tokens[6];
+    int count = std::stoi(tokens[7]);
+    
+    std::map<std::string, int> priorities;
+    for (int i=0; i<count; ++i) {
+        if (8+i < tokens.size()) {
+            std::string token = tokens[8+i];
+            size_t pos = token.find(':');
+            if (pos != std::string::npos) {
+                std::string id = token.substr(0, pos);
+                int prio = std::stoi(token.substr(pos+1));
+                priorities[id] = prio;
+            }
+        }
+    }
+    
+    PAutoLock lock(_mutex);
+    auto it = _groups.find(groupId);
+    if (it != _groups.end()) {
+        it->second->updatePriorities(priorities);
+        sendResponse(ip, port, header + " OK");
+        printf("[MODIFY_GROUP] ID=%s Members=%d\n", groupId.c_str(), count);
+    } else {
+        sendResponse(ip, port, header + " ERROR: Group not found");
+    }
 }
 
 void CmpServer::processRemoveGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header) {
@@ -316,26 +375,7 @@ void CmpServer::processRemoveGroup(const std::vector<std::string>& tokens, const
     }
 }
 
-void CmpServer::processJoinGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header) {
-    if (tokens.size() < 10) return; // groupId, sessionId, userIp, userPort
-    std::string groupId = tokens[6];
-    std::string sessionId = tokens[7];
-    std::string userIp = tokens[8];
-    int userPort = std::stoi(tokens[9]);
-    
-    PAutoLock lock(_mutex);
-    auto groupIt = _groups.find(groupId);
-    
-    if (groupIt == _groups.end()) {
-        sendResponse(ip, port, header + " ERROR: Group not found");
-        return;
-    }
-    
-    groupIt->second->addMember(sessionId, userIp, userPort);
-    
-    sendResponse(ip, port, header + " OK");
-    printf("[JOIN_GROUP] Group=%s Session=%s Peer=%s:%d\n", groupId.c_str(), sessionId.c_str(), userIp.c_str(), userPort);
-}
+
 
 void CmpServer::processLeaveGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header) {
     if (tokens.size() < 8) return;
@@ -355,6 +395,38 @@ void CmpServer::processLeaveGroup(const std::vector<std::string>& tokens, const 
     
 
 
+void CmpServer::processJoinGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header) {
+    // Debug: Print all tokens
+    std::string allTokens;
+    for (auto& t : tokens) allTokens += "[" + t + "] ";
+    printf("[CMD_DEBUG] JoinGroup Tokens: %s\n", allTokens.c_str());
+
+    // Expected format: CSP_MAIN <callId> CMP_MAIN 0 joingroup <groupId> <sessionId> <userIp> <userPort>
+    if (tokens.size() < 10) {
+        printf("[CMD_ERROR] JoinGroup Token Count %d < 10. Ignoring.\n", (int)tokens.size());
+        sendResponse(ip, port, header + " ERROR: Invalid Args");
+        return;
+    }
+    std::string groupId = tokens[6];
+    std::string sessionId = tokens[7];
+    std::string userIp = tokens[8];
+    int userPort = std::stoi(tokens[9]);
+
+    PAutoLock lock(_mutex);
+    auto groupIt = _groups.find(groupId);
+    if (groupIt == _groups.end()) {
+        sendResponse(ip, port, header + " ERROR: Group not found");
+        return;
+    }
+    printf("0. [JOIN_GROUP] Group=%s Session=%s Peer=%s:%d\n", groupId.c_str(), sessionId.c_str(), userIp.c_str(), userPort);
+
+    groupIt->second->addMember(sessionId, userIp, userPort);
+
+    sendResponse(ip, port, header + " OK");
+    printf("1. [JOIN_GROUP] Group=%s Session=%s Peer=%s:%d\n", groupId.c_str(), sessionId.c_str(), userIp.c_str(), userPort);
+}    
+
+
 void CmpServer::sendResponse(const std::string& ip, int port, const std::string& msg) {
     // Send back to origin (which is CSP Port)
     struct sockaddr_in addr;
@@ -364,6 +436,10 @@ void CmpServer::sendResponse(const std::string& ip, int port, const std::string&
 
     sendto(_udpFd, msg.c_str(), msg.length(), 0, (struct sockaddr*)&addr, sizeof(addr));
 }
+
+
+
+// ... (skip to loadConfig)
 
 void CmpServer::loadConfig() {
     FILE* fp = fopen(_configFile.c_str(), "r");
@@ -377,13 +453,17 @@ void CmpServer::loadConfig() {
                 if (strcmp(key, "RtpIp") == 0) _rtpIp = val;
                 if (strcmp(key, "ServerIp") == 0) _serverIp = val;
                 if (strcmp(key, "ServerPort") == 0) _serverPort = atoi(val);
+                if (strcmp(key, "EnableDtmfPtt") == 0) _enableDtmfPtt = atoi(val);
+                if (strcmp(key, "DtmfPushDigit") == 0) _dtmfPushDigit = val;
+                if (strcmp(key, "DtmfReleaseDigit") == 0) _dtmfReleaseDigit = val;
                 // CspIp/Port removed from config by user request
             }
         }
         fclose(fp);
     }
-    printf("Config: RtpStartPort=%d, RtpPoolSize=%d, RtpIp=%s, ServerIp=%s, ServerPort=%d\n", 
-           _rtpStartPort, _rtpPoolSize, _rtpIp.c_str(), _serverIp.c_str(), _serverPort);
+    printf("Config: RtpStartPort=%d, RtpPoolSize=%d, RtpIp=%s, ServerIp=%s, ServerPort=%d, DtmfPtt=%d Push=%s Rel=%s\n", 
+           _rtpStartPort, _rtpPoolSize, _rtpIp.c_str(), _serverIp.c_str(), _serverPort, 
+           _enableDtmfPtt, _dtmfPushDigit.c_str(), _dtmfReleaseDigit.c_str());
 }
 
 void CmpServer::initResourcePool() {

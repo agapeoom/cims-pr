@@ -350,55 +350,45 @@ void CSipServer::EventCallStart( const char *pszCallId, CSipCallRtp *pclsRtp ) {
             // Thread-safe implementation using GetLocalIp for existence check and SetIpPort
             int iRtpPort = clsCallInfo.m_iPeerRtpPort;
             
-            printf("[DEBUG] EventCallStart Fix: CallId=%s PeerRtpPort=%d\n", pszCallId, iRtpPort);
-
             std::string strAllocatedIp;
             if (!gclsRtpMap.GetLocalIp(iRtpPort, strAllocatedIp)) {
                 // If Leg 2 (Send side), CallMap might have stored StartPort + 2, 
                 // but EventIncomingCall used StartPort. Try accounting for that.
-                printf("[DEBUG] EventCallStart Fix: Select(%d) failed. Trying %d\n", iRtpPort, iRtpPort - 2);
                 if (gclsRtpMap.GetLocalIp(iRtpPort - 2, strAllocatedIp)) {
                      iRtpPort = iRtpPort - 2;
                 }
             }
 
             if (!strAllocatedIp.empty()) {
-                printf("[DEBUG] EventCallStart Fix: Found RtpInfo for port %d\n", iRtpPort);
-                
-                // Debug raw members
-                printf("[DEBUG] EventCallStart Fix: pclsRtp members: m_iPort=%d, m_strIp=%s\n", 
-                        pclsRtp->m_iPort, pclsRtp->m_strIp.c_str());
 
                 // Update Video First (Index 2) so Audio (Index 0) trigger has it
-                if (pclsRtp->GetMediaCount() >= 2) { // Assuming multi media
+                if (pclsRtp->GetMediaCount() >= 2) { 
                      int iVideoPort = pclsRtp->GetVideoPort();
-                     printf("[DEBUG] EventCallStart Fix: VideoPort=%d\n", iVideoPort);
                      if (iVideoPort > 0) {
                          gclsRtpMap.SetIpPort(iRtpPort, 2, inet_addr(pclsRtp->m_strIp.c_str()), iVideoPort, 1);
                      }
                 }
                 
                 int iAudioPort = pclsRtp->GetAudioPort();
-                printf("[DEBUG] EventCallStart Fix: AudioPort=%d\n", iAudioPort);
                 
                 if (iAudioPort <= 0 && pclsRtp->m_iPort > 0) {
                     iAudioPort = pclsRtp->m_iPort;
-                    printf("[DEBUG] EventCallStart Fix: Using m_iPort as AudioPort: %d\n", iAudioPort);
                 }
 
                 if (iAudioPort > 0) {
                      // This triggers UpdateSession with Peer Idx 1
                      gclsRtpMap.SetIpPort(iRtpPort, 0, inet_addr(pclsRtp->m_strIp.c_str()), iAudioPort, 1);
                 }
-            } else {
-                 printf("[DEBUG] EventCallStart Fix: FAILED to find RtpInfo for port %d (or %d)\n", clsCallInfo.m_iPeerRtpPort, clsCallInfo.m_iPeerRtpPort - 2);
             }
             
             // [GROUP CALL FIX] Notify Service independent of RtpMap existence (Shared Session Support)
             int iRemoteAudio = pclsRtp->GetAudioPort();
+            printf("[DEBUG] EventCallStart: GetAudioPort=%d m_iPort=%d IP=%s\n", iRemoteAudio, pclsRtp->m_iPort, pclsRtp->m_strIp.c_str());
+
             if (iRemoteAudio <= 0 && pclsRtp->m_iPort > 0) iRemoteAudio = pclsRtp->m_iPort;
             
             if (iRemoteAudio > 0) {
+                printf("[DEBUG] EventCallStart: Calling OnCallStarted with %s:%d\n", pclsRtp->m_strIp.c_str(), iRemoteAudio);
                 gclsGroupCallService.OnCallStarted(pszCallId, pclsRtp->m_strIp, iRemoteAudio);
             }
             

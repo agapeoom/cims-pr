@@ -25,8 +25,17 @@ public:
     /** Group Name */
     std::string m_strName;
 
-    /** Member List (List of User IDs) */
-    std::vector<std::string> m_vecMembers;
+    /** Member Structure */
+    struct CGroupMember {
+        std::string m_strId;
+        int m_iPriority;
+
+        CGroupMember() : m_iPriority(0) {}
+        CGroupMember(std::string id, int prio) : m_strId(id), m_iPriority(prio) {}
+    };
+
+    /** Member List (List of Group Members) */
+    std::vector<CGroupMember> m_vecMembers;
 
     /** Parsing method */
     bool Parse( const char *pszFileName );

@@ -46,9 +46,9 @@ bool CGroupCallService::ProcessGroupCall( const char *pszGroupId, const char *ps
     // Actually, if we want A to talk to Group, A's RTP should be joined.
     // But this function is complex. Let's just trigger Invitations for other members.
 
-    std::vector<std::string>::iterator it;
+    std::vector<CXmlGroup::CGroupMember>::iterator it;
     for ( it = clsGroup.m_vecMembers.begin(); it != clsGroup.m_vecMembers.end(); ++it ) {
-        std::string strMember = *it;
+        std::string strMember = it->m_strId;
         if (strMember == pszCallerInfo) continue; // Don't call back caller
 
         // Trigger InviteMember?
@@ -100,10 +100,16 @@ bool CGroupCallService::InviteMember( const char *pszUserId, const char *pszGrou
         strSharedIp = m_mapGroupRtp[pszGroupId].strIp;
     } else {
         // Try to allocate now
-        if ( gclsCmpClient.AddGroup( pszGroupId, strSharedIp, iSharedPort ) ) {
-             m_mapGroupRtp[pszGroupId] = { iSharedPort, strSharedIp };
+        CXmlGroup clsGroup;
+        if ( gclsGroupMap.Select( pszGroupId, clsGroup ) ) {
+            if ( gclsCmpClient.AddGroup( pszGroupId, clsGroup.m_vecMembers, strSharedIp, iSharedPort ) ) {
+                 m_mapGroupRtp[pszGroupId] = { iSharedPort, strSharedIp, 0 }; // Initial hash 0 or calc
+            } else {
+                 CLog::Print( LOG_ERROR, "InviteMember(%s) Failed to get/alloc Shared Port for Group %s", pszUserId, pszGroupId );
+                 return false;
+            }
         } else {
-             CLog::Print( LOG_ERROR, "InviteMember(%s) Failed to get/alloc Shared Port for Group %s", pszUserId, pszGroupId );
+             CLog::Print( LOG_ERROR, "InviteMember(%s) Group config not found for %s", pszUserId, pszGroupId );
              return false;
         }
     }
@@ -194,14 +200,35 @@ void CGroupCallService::SyncGroupsState() {
     // A. Add New Groups
     gclsGroupMap.IterateInternal([this](const CXmlGroup& group) {
         std::unique_lock<std::recursive_mutex> lock(m_mutex);
-        if ( m_mapGroupRtp.find(group.m_strId) == m_mapGroupRtp.end() ) {
+        
+        // Calculate Hash
+        std::string strHashInput;
+        for(const auto& mem : group.m_vecMembers) {
+            strHashInput += mem.m_strId + ":" + std::to_string(mem.m_iPriority) + ";";
+        }
+        size_t nHash = std::hash<std::string>{}(strHashInput);
+
+        auto itRtp = m_mapGroupRtp.find(group.m_strId);
+        if ( itRtp == m_mapGroupRtp.end() ) {
+            // NEW GROUP
             lock.unlock(); // Release lock for network op
             
             std::string ip; int port;
-            if ( gclsCmpClient.AddGroup( group.m_strId, ip, port ) ) {
+            if ( gclsCmpClient.AddGroup( group.m_strId, group.m_vecMembers, ip, port ) ) {
                 std::unique_lock<std::recursive_mutex> lock2(m_mutex);
-                m_mapGroupRtp[group.m_strId] = { port, ip };
-                CLog::Print( LOG_INFO, "SyncGroupsState: Added Group(%s) -> %s:%d", group.m_strId.c_str(), ip.c_str(), port );
+                m_mapGroupRtp[group.m_strId] = { port, ip, nHash };
+                CLog::Print( LOG_INFO, "SyncGroupsState: Added Group(%s) -> %s:%d (MemHash:%lu)", group.m_strId.c_str(), ip.c_str(), port, nHash );
+            }
+        } else {
+            // EXISTING GROUP - Check for Diff
+            if (itRtp->second.nMemberHash != nHash) {
+                // CHANGED
+                lock.unlock();
+                CLog::Print( LOG_INFO, "SyncGroupsState: Group(%s) Config Changed. Sending ModifyGroup.", group.m_strId.c_str() );
+                if ( gclsCmpClient.ModifyGroup( group.m_strId, group.m_vecMembers ) ) {
+                    std::unique_lock<std::recursive_mutex> lock2(m_mutex);
+                    m_mapGroupRtp[group.m_strId].nMemberHash = nHash;
+                }
             }
         }
     });
@@ -248,7 +275,7 @@ void CGroupCallService::CheckMemberState() {
                     // Check if member still in group
                     bool bFound = false;
                     for(const auto& mem : group.m_vecMembers) {
-                        if (mem == strUserId) {
+                        if (mem.m_strId == strUserId) {
                             bFound = true;
                             break;
                         }
@@ -277,16 +304,17 @@ void CGroupCallService::CheckGroupIntegrity() {
                 // Unlock to avoid Sync calling AddGroup blocking? CmpClient is separate lock.
                 lock.unlock();
                 std::string ip; int port;
-                if (gclsCmpClient.AddGroup(group.m_strId, ip, port)) {
+                if (gclsCmpClient.AddGroup(group.m_strId, group.m_vecMembers, ip, port)) {
                      lock.lock();
-                     m_mapGroupRtp[group.m_strId] = { port, ip };
+                     m_mapGroupRtp[group.m_strId] = { port, ip, 0 }; // Hash 0 for now or calc it
                 } else {
                      return; // Skip this group if alloc fails
                 }
             }
         }
 
-        for ( const std::string& strUserId : group.m_vecMembers ) {
+        for ( const auto& mem : group.m_vecMembers ) {
+             std::string strUserId = mem.m_strId;
              CUserInfo clsUser;
              if ( gclsUserMap.Select( strUserId.c_str(), clsUser ) ) {
                  std::unique_lock<std::recursive_mutex> lock(m_mutex);

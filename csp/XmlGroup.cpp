@@ -35,9 +35,29 @@ bool CXmlGroup::Parse( const char *pszFileName ) {
         if ( pclsMemberList->SelectElementList( "Member", clsList ) ) {
             XML_ELEMENT_LIST::iterator it;
             for ( it = clsList.begin(); it != clsList.end(); ++it ) {
-                std::string strMember = it->GetData();
-                if ( !strMember.empty() ) {
-                    m_vecMembers.push_back( strMember );
+                // Check if it has child elements (New Format) or text only (Legacy)
+                // Assuming GetData() returns text content.
+                // If text content exists directly, it's legacy: <Member>1001</Member>
+                // If not, look for children: <Member><Id>1001</Id><Priority>0</Priority></Member>
+                
+                std::string strId;
+                int iPriority = 0; // Default priority
+
+                CXmlElement* pId = it->SelectElement("Id");
+                if ( pId ) {
+                    // New Format
+                    strId = pId->GetData();
+                    CXmlElement* pPrio = it->SelectElement("Priority");
+                    if (pPrio) {
+                        iPriority = std::stoi(pPrio->GetData());
+                    }
+                } else {
+                    // Legacy Format
+                    strId = it->GetData();
+                }
+
+                if ( !strId.empty() ) {
+                    m_vecMembers.push_back( CGroupMember(strId, iPriority) );
                 }
             }
         }

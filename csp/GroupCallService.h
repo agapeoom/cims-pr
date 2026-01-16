@@ -61,6 +61,7 @@ private:
     struct GroupRtpInfo {
         int iPort;
         std::string strIp;
+        size_t nMemberHash;
     };
     std::map<std::string, GroupRtpInfo> m_mapGroupRtp;
 

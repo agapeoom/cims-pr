@@ -235,15 +235,15 @@ bool CCmpClient::RemoveSession(const std::string& strSessionId) {
     return SendRequestAndWait(strPayload, strResp);
 }
 
-bool CCmpClient::AddGroup(const std::string& strGroupId, std::string& strIp, int& iPort) {
-    // Send 7 tokens: Header(0-3) CMD(4) DummySess(5) GroupId(6) -> Matching CmpServer expectation
-    // Wait, Server header consumes 0-5. So Header(6 tokens).
-    // Token 5 is part of header.
-    // If we send "addgroup 0 2000".
-    // 0:CSP 1:0 2:CMP 3:0 4:addgroup 5:0.
-    // Header = ... addgroup 0.
-    // GroupId = tokens[6] = 2000.
-    std::string strPayload = "CSP_MAIN 0 CMP_MAIN 0 addgroup 0 " + strGroupId;
+bool CCmpClient::AddGroup(const std::string& strGroupId, const std::vector<CXmlGroup::CGroupMember>& vecMembers, std::string& strIp, int& iPort) {
+    // Send 7 tokens header + GroupID + Members
+    // Format: addgroup 0 <groupId> <count> <mem1:prio1> <mem2:prio2> ...
+    
+    std::string strPayload = "CSP_MAIN 0 CMP_MAIN 0 addgroup 0 " + strGroupId + " " + std::to_string(vecMembers.size());
+    for (const auto& mem : vecMembers) {
+        strPayload += " " + mem.m_strId + ":" + std::to_string(mem.m_iPriority);
+    }
+    
     std::string strResp;
     
     if (SendRequestAndWait(strPayload, strResp)) {
@@ -262,7 +262,7 @@ bool CCmpClient::AddGroup(const std::string& strGroupId, std::string& strIp, int
                 if (i + 2 < tokens.size()) {
                     strIp = tokens[i+1];
                     iPort = std::stoi(tokens[i+2]);
-                    CLog::Print(LOG_INFO, "CmpClient::AddGroup Success: %s:%d", strIp.c_str(), iPort);
+                    CLog::Print(LOG_INFO, "CmpClient::AddGroup Success: %s:%d Members: %d", strIp.c_str(), iPort, (int)vecMembers.size());
                     return true;
                 }
             }
@@ -272,6 +272,17 @@ bool CCmpClient::AddGroup(const std::string& strGroupId, std::string& strIp, int
          CLog::Print(LOG_ERROR, "CmpClient::AddGroup SendRequest Failed");
     }
     return false;
+}
+
+bool CCmpClient::ModifyGroup(const std::string& strGroupId, const std::vector<CXmlGroup::CGroupMember>& vecMembers) {
+    // Format: modifygroup 0 <groupId> <count> <mem1:prio1> <mem2:prio2> ...
+    std::string strPayload = "CSP_MAIN 0 CMP_MAIN 0 modifygroup 0 " + strGroupId + " " + std::to_string(vecMembers.size());
+    for (const auto& mem : vecMembers) {
+        strPayload += " " + mem.m_strId + ":" + std::to_string(mem.m_iPriority);
+    }
+    
+    std::string strResp;
+    return SendRequestAndWait(strPayload, strResp);
 }
 
 bool CCmpClient::JoinGroup(const std::string& strGroupId, const std::string& strSessionId, const std::string& strIp, int iPort) {
