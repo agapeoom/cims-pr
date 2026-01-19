@@ -239,7 +239,7 @@ bool CCmpClient::AddGroup(const std::string& strGroupId, const std::vector<CXmlG
     // Send 7 tokens header + GroupID + Members
     // Format: addgroup 0 <groupId> <count> <mem1:prio1> <mem2:prio2> ...
     
-    std::string strPayload = "CSP_MAIN 0 CMP_MAIN 0 addgroup 0 " + strGroupId + " " + std::to_string(vecMembers.size());
+    std::string strPayload = "CSP_MAIN 0 CMP_MAIN 0 addgroup " + strGroupId + " " + std::to_string(vecMembers.size());
     for (const auto& mem : vecMembers) {
         strPayload += " " + mem.m_strId + ":" + std::to_string(mem.m_iPriority);
     }

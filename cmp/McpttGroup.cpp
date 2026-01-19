@@ -159,16 +159,17 @@ void McpttGroup::onRtpPacket(const std::string& ip, int port, char* buf, int len
             if (_dtmfEnable && len > 12) { 
                 // DEBUG: Print potentially valid DTMF packets or all packets if needed
                 // Rate limit or just print for now since user says "nothing happens".
+                /*
                 if (pt == 101) {
-                     printf("[DEBUG] RTP Packet: IP=%s Port=%d Len=%d PT=%d SenderId=%s\n", ip.c_str(), port, len, pt, senderId.c_str());
+                    printf("[DEBUG] RTP Packet: IP=%s Port=%d Len=%d PT=%d SenderId=%s\n", ip.c_str(), port, len, pt, senderId.c_str());
                 } else if (pt != 0 && pt != 98) { // Ignore typical audio
-                     printf("[DEBUG] Unknown PT Packet: IP=%s Port=%d Len=%d PT=%d SenderId=%s\n", ip.c_str(), port, len, pt, senderId.c_str());
+                    printf("[DEBUG] Unknown PT Packet: IP=%s Port=%d Len=%d PT=%d SenderId=%s\n", ip.c_str(), port, len, pt, senderId.c_str());
                 }
+                */
 
                 if (pt == 101) { 
                     unsigned char digitCode = (unsigned char)buf[12];
                     bool endBit = (buf[13] & 0x80) != 0; 
-                    printf("[DEBUG] PT101 Detail: Code=%d EndBit=%d\n", digitCode, endBit);
                     
                     char digitChar = 0;
                     if (digitCode >= 0 && digitCode <= 9) digitChar = '0' + digitCode;
@@ -177,17 +178,18 @@ void McpttGroup::onRtpPacket(const std::string& ip, int port, char* buf, int len
                     else if (digitCode >= 12 && digitCode <= 15) digitChar = 'A' + (digitCode - 12);
                     
                     if (digitChar != 0 && endBit) {
-                        printf("[McpttGroup:%s] DTMF Detected: %c from %s\n", _groupId.c_str(), digitChar, senderId.c_str());
                         std::string dStr(1, digitChar);
                         
                         unsigned int uId = 0;
                         try { uId = std::stoul(senderId); } catch (...) { uId = 9999; }
 
                         if (dStr == _dtmfPushDigit) {
+                            printf("[McpttGroup:%s] DTMF Push: %c from %s\n", _groupId.c_str(), digitChar, senderId.c_str());
                             action = "REQUEST";
                             actionSenderId = senderId;
                             actionUserId = uId;
                         } else if (dStr == _dtmfReleaseDigit) {
+                            printf("[McpttGroup:%s] DTMF Release: %c from %s\n", _groupId.c_str(), digitChar, senderId.c_str());
                             action = "RELEASE";
                             actionSenderId = senderId;
                             actionUserId = uId;
@@ -197,7 +199,8 @@ void McpttGroup::onRtpPacket(const std::string& ip, int port, char* buf, int len
             }
 
             if (_floorTaken && _floorOwnerSessionId == senderId) {
-                sendToAll(buf, len, ip, port);
+                //printf("[McpttGroup:%s] Forwarding RTP Packet: IP=%s Port=%d Len=%d PT=%d SenderId=%s\n", _groupId.c_str(), ip.c_str(), port, len, pt, senderId.c_str());
+                sendAudioToAll(buf, len, ip, port);
             }
         }
     } // Lock releases here
@@ -310,7 +313,8 @@ void McpttGroup::handleFloorRequest(const std::string& sessionId, unsigned int u
             
             // Broadcast Taken (New Owner)
             broadcastFloorStatus(FLOOR_TAKEN, userId);
-            
+            printf("[McpttGroup:%s] Floor PREEMPTED by User %u (Prio %d) from User %u (Prio %d)\n", 
+                   _groupId.c_str(), userId, requesterPrio, _floorOwnerUserId, ownerPrio);
         } else {
             // REJECT
             FloorControlPacket response;
@@ -351,15 +355,44 @@ void McpttGroup::broadcastFloorStatus(unsigned char opcode, unsigned int userId)
     pkt.opcode = opcode;
     pkt.user_id = htonl(userId);
     
-    sendToAll((char*)&pkt, sizeof(pkt), "", 0);
+    // Floor Control is RTCP (Audio RTCP for now)
+    sendAudioRtcpToAll((char*)&pkt, sizeof(pkt), "", 0);
 }
 
-void McpttGroup::sendToAll(const char* data, int len, const std::string& excludeIp, int excludePort) {
+void McpttGroup::sendAudioToAll(const char* data, int len, const std::string& excludeIp, int excludePort) {
     if (_sharedSession) {
         for (auto const& [sid, peer] : _members) {
             if (peer.ip == excludeIp && peer.port == excludePort) continue;
-            // RTCP port usually peer.port + 1
-            _sharedSession->sendTo(peer.ip, peer.port + 1, (char*)data, len); // Assuming RTCP
+            // Audio RTP: Peer Port
+            _sharedSession->sendTo(peer.ip, peer.port, (char*)data, len); 
+        }
+    }
+}
+
+void McpttGroup::sendAudioRtcpToAll(const char* data, int len, const std::string& excludeIp, int excludePort) {
+    if (_sharedSession) {
+        for (auto const& [sid, peer] : _members) {
+            if (peer.ip == excludeIp && peer.port == excludePort) continue;
+            // Audio RTCP: Peer Port + 1
+            _sharedSession->sendTo(peer.ip, peer.port + 1, (char*)data, len); 
+        }
+    }
+}
+
+void McpttGroup::sendVideoToAll(const char* data, int len, const std::string& excludeIp, int excludePort) {
+    if (_sharedSession) {
+        for (auto const& [sid, peer] : _members) {
+            // Check Peer Video Port? Current Peer struct lacks it.
+            // Placeholder: Assuming no video forwarding until Peer updated.
+             // _sharedSession->sendVideoTo(peer.ip, peer.videoPort, (char*)data, len); 
+        }
+    }
+}
+
+void McpttGroup::sendVideoRtcpToAll(const char* data, int len, const std::string& excludeIp, int excludePort) {
+    if (_sharedSession) {
+        for (auto const& [sid, peer] : _members) {
+             // _sharedSession->sendVideoTo(peer.ip, peer.videoPort + 1, (char*)data, len); 
         }
     }
 }

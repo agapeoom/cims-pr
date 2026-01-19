@@ -120,10 +120,12 @@ bool CGroupCallService::InviteMember( const char *pszUserId, const char *pszGrou
     clsRtp.SetIpPort( strSharedIp.c_str(), iSharedPort, SOCKET_COUNT_PER_MEDIA );
     
     // Codecs
+    clsRtp.m_clsCodecList.push_back(99); 
+    clsRtp.m_clsCodecList.push_back(98);
     clsRtp.m_clsCodecList.push_back(0);   
     clsRtp.m_clsCodecList.push_back(8);   
     clsRtp.m_clsCodecList.push_back(101); 
-    clsRtp.m_iCodec = 0; 
+    clsRtp.m_iCodec = 99; 
 
     // 4. Create Call
     std::string strCallId;

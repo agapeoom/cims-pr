@@ -65,7 +65,11 @@ public:
     void setDtmfConfig(bool enable, const std::string& pushDigit, const std::string& releaseDigit);
 
 private:
-    void sendToAll(const char* data, int len, const std::string& excludeIp, int excludePort);
+    void sendAudioToAll(const char* data, int len, const std::string& excludeIp, int excludePort);
+    void sendAudioRtcpToAll(const char* data, int len, const std::string& excludeIp, int excludePort);
+    // Video functions for future use
+    void sendVideoToAll(const char* data, int len, const std::string& excludeIp, int excludePort);
+    void sendVideoRtcpToAll(const char* data, int len, const std::string& excludeIp, int excludePort);
     void sendToMember(const std::string& sessionId, const char* data, int len);
     void broadcastFloorStatus(unsigned char opcode, unsigned int userId);
 

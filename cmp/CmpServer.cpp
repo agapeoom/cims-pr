@@ -248,6 +248,13 @@ void CmpServer::processAlive(const std::vector<std::string>& tokens, const std::
 
 void CmpServer::processAddGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header) {
     // CMD: addgroup 0 <groupId> <count> <mem1:prio1> ...
+    std::string allTokens;
+    for (auto& t : tokens) allTokens += "[" + t + "] ";
+    printf("[CMD_DEBUG] AddGroup Tokens: %s\n", allTokens.c_str());
+
+
+
+
     if (tokens.size() < 9) return;
     std::string groupId = tokens[6];
     int count = std::stoi(tokens[7]);
@@ -415,6 +422,7 @@ void CmpServer::processJoinGroup(const std::vector<std::string>& tokens, const s
     PAutoLock lock(_mutex);
     auto groupIt = _groups.find(groupId);
     if (groupIt == _groups.end()) {
+        printf("[CMD_ERROR] JoinGroup Group %s not found. Ignoring.\n", groupId.c_str());
         sendResponse(ip, port, header + " ERROR: Group not found");
         return;
     }

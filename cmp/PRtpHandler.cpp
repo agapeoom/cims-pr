@@ -176,26 +176,30 @@ bool PRtpTrans::proc()
         if (rtpFd == INVALID_SOCKET) break;
 
         int len = 0;
+        McpttGroup* pGroup = NULL;
         {
             PAutoLock lock(_mutex);
             len = _rtpSock.recv(pkt, sizeof(pkt), ipRmt, portRmt);
-            if (len > 0) {               
-                if (_group) {
-                    _group->onRtpPacket(ipRmt, portRmt, pkt, len);
-                } else {
-                    // Relay Logic
-                    int srcIdx = -1;
-                    if (_peers[0].active && portRmt == _peers[0].port && ipRmt == _peers[0].ip) srcIdx = 0;
-                    else if (_peers[1].active && portRmt == _peers[1].port && ipRmt == _peers[1].ip) srcIdx = 1;
-                    
-                    if (srcIdx != -1) {
-                        int dstIdx = (srcIdx == 0) ? 1 : 0;
-                        if (_peers[dstIdx].active) {
-                            _rtpSock.sendTo(pkt, len, &_peers[dstIdx].addrRtp);
-                        }
-                    } else if (_peers[0].active && !_peers[1].active && srcIdx == 0) {
-                        _rtpSock.send(pkt, len); 
+            pGroup = _group;
+        }
+
+        if (len > 0) {               
+            if (pGroup) {
+                pGroup->onRtpPacket(ipRmt, portRmt, pkt, len);
+            } else {
+                PAutoLock lock(_mutex);
+                // Relay Logic
+                int srcIdx = -1;
+                if (_peers[0].active && portRmt == _peers[0].port && ipRmt == _peers[0].ip) srcIdx = 0;
+                else if (_peers[1].active && portRmt == _peers[1].port && ipRmt == _peers[1].ip) srcIdx = 1;
+                
+                if (srcIdx != -1) {
+                    int dstIdx = (srcIdx == 0) ? 1 : 0;
+                    if (_peers[dstIdx].active) {
+                        _rtpSock.sendTo(pkt, len, &_peers[dstIdx].addrRtp);
                     }
+                } else if (_peers[0].active && !_peers[1].active && srcIdx == 0) {
+                    _rtpSock.send(pkt, len); 
                 }
             }
         }
@@ -213,26 +217,30 @@ bool PRtpTrans::proc()
          if (rtcpFd == INVALID_SOCKET) break;
 
          int len = 0;
+         McpttGroup* pGroup = NULL;
          {
              PAutoLock lock(_mutex);
              len = _rtcpSock.recv(rtcpBuf, sizeof(rtcpBuf), ipRmt, portRmt);
-             if (len > 0) {
-                 if (_group) {
-                     _group->onRtcpPacket(ipRmt, portRmt, rtcpBuf, len);
-                 } else {
-                      int srcIdx = -1;
-                      if (_peers[0].active && portRmt == _peers[0].port + 1 && ipRmt == _peers[0].ip) srcIdx = 0;
-                      else if (_peers[1].active && portRmt == _peers[1].port + 1 && ipRmt == _peers[1].ip) srcIdx = 1;
+             pGroup = _group;
+         }
 
-                      if (srcIdx != -1) {
-                          int dstIdx = (srcIdx == 0) ? 1 : 0;
-                          if (_peers[dstIdx].active) {
-                              _rtcpSock.sendTo(rtcpBuf, len, &_peers[dstIdx].addrRtcp);
-                          }
-                      } else if (_peers[0].active && !_peers[1].active && srcIdx == 0) {
-                           _rtcpSock.send(rtcpBuf, len);
+         if (len > 0) {
+             if (pGroup) {
+                 pGroup->onRtcpPacket(ipRmt, portRmt, rtcpBuf, len);
+             } else {
+                  PAutoLock lock(_mutex);
+                  int srcIdx = -1;
+                  if (_peers[0].active && portRmt == _peers[0].port + 1 && ipRmt == _peers[0].ip) srcIdx = 0;
+                  else if (_peers[1].active && portRmt == _peers[1].port + 1 && ipRmt == _peers[1].ip) srcIdx = 1;
+
+                  if (srcIdx != -1) {
+                      int dstIdx = (srcIdx == 0) ? 1 : 0;
+                      if (_peers[dstIdx].active) {
+                          _rtcpSock.sendTo(rtcpBuf, len, &_peers[dstIdx].addrRtcp);
                       }
-                 }
+                  } else if (_peers[0].active && !_peers[1].active && srcIdx == 0) {
+                       _rtcpSock.send(rtcpBuf, len);
+                  }
              }
          }
          if (len <= 0) break;
@@ -248,27 +256,31 @@ bool PRtpTrans::proc()
         if (rtpFd == INVALID_SOCKET) break;
 
         int len = 0;
+        McpttGroup* pGroup = NULL;
         {
             PAutoLock lock(_mutex);
             len = _videoRtpSock.recv(pkt, sizeof(pkt), ipRmt, portRmt);
-            if (len > 0) {
-                 if (_group) {
-                      _group->onVideoRtpPacket(ipRmt, portRmt, pkt, len);
-                 } else {
-                      int srcIdx = -1;
-                      if (_peers[0].active && portRmt == _peers[0].videoPort && ipRmt == _peers[0].ip) srcIdx = 0;
-                      else if (_peers[1].active && portRmt == _peers[1].videoPort && ipRmt == _peers[1].ip) srcIdx = 1;
-                      
-                      if (srcIdx != -1) {
-                          int dstIdx = (srcIdx == 0) ? 1 : 0;
-                          if (_peers[dstIdx].active && _peers[dstIdx].videoPort > 0) {
-                              _videoRtpSock.sendTo(pkt, len, &_peers[dstIdx].addrVideoRtp);
-                          }
-                      } else if (_peers[0].active && !_peers[1].active && srcIdx == 0) {
-                          _videoRtpSock.send(pkt, len);
+            pGroup = _group;
+        }
+
+        if (len > 0) {
+             if (pGroup) {
+                  pGroup->onVideoRtpPacket(ipRmt, portRmt, pkt, len);
+             } else {
+                  PAutoLock lock(_mutex);
+                  int srcIdx = -1;
+                  if (_peers[0].active && portRmt == _peers[0].videoPort && ipRmt == _peers[0].ip) srcIdx = 0;
+                  else if (_peers[1].active && portRmt == _peers[1].videoPort && ipRmt == _peers[1].ip) srcIdx = 1;
+                  
+                  if (srcIdx != -1) {
+                      int dstIdx = (srcIdx == 0) ? 1 : 0;
+                      if (_peers[dstIdx].active && _peers[dstIdx].videoPort > 0) {
+                          _videoRtpSock.sendTo(pkt, len, &_peers[dstIdx].addrVideoRtp);
                       }
-                 }
-            }
+                  } else if (_peers[0].active && !_peers[1].active && srcIdx == 0) {
+                      _videoRtpSock.send(pkt, len);
+                  }
+             }
         }
         
         if (len <= 0) break;

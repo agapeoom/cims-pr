@@ -245,9 +245,11 @@ bool CSipDialog::AddSdp( CSipMessage * pclsMessage )
 				case 99:
 					iLen += snprintf( szSdp + iLen, sizeof(szSdp)-iLen, "a=rtpmap:99 AMR-WB/16000\r\n" );
 					iLen += snprintf( szSdp + iLen, sizeof(szSdp)-iLen, "a=fmtp:99\r\n" );
+                                        break;
 				case 98:
 					iLen += snprintf( szSdp + iLen, sizeof(szSdp)-iLen, "a=rtpmap:98 AMR/8000/1\r\n" );
 					iLen += snprintf( szSdp + iLen, sizeof(szSdp)-iLen, "a=fmtp:98 octet-align=1\r\n" );
+                                        break;
 				case 0:
 					iLen += snprintf( szSdp + iLen, sizeof(szSdp)-iLen, "a=rtpmap:0 PCMU/8000\r\n" );
 					break;
