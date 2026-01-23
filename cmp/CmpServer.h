@@ -8,6 +8,7 @@
 #include "pmodule.h"
 #include "PRtpHandler.h"
 #include "McpttGroup.h"
+#include "SimpleJson.h"
 
 class CmpServer : public PModule {
 public:
@@ -21,17 +22,17 @@ public:
 
 protected:
     void handlePacket(char* buf, int len, const std::string& ip, int port);
-    void processAdd(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header);
-    void processRemove(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header);
-    void processModify(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header);
-    void processAlive(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header);
+    void processAdd(const SimpleJson::JsonNode& payload, const std::string& ip, int port, int transId);
+    void processRemove(const SimpleJson::JsonNode& payload, const std::string& ip, int port, int transId);
+    void processModify(const SimpleJson::JsonNode& payload, const std::string& ip, int port, int transId);
+    void processAlive(const SimpleJson::JsonNode& payload, const std::string& ip, int port, int transId);
 
     // Group Management
-    void processAddGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header);
-    void processModifyGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header);
-    void processRemoveGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header);
-    void processJoinGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header);
-    void processLeaveGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header);
+    void processAddGroup(const SimpleJson::JsonNode& payload, const std::string& ip, int port, int transId);
+    void processModifyGroup(const SimpleJson::JsonNode& payload, const std::string& ip, int port, int transId);
+    void processRemoveGroup(const SimpleJson::JsonNode& payload, const std::string& ip, int port, int transId);
+    void processJoinGroup(const SimpleJson::JsonNode& payload, const std::string& ip, int port, int transId);
+    void processLeaveGroup(const SimpleJson::JsonNode& payload, const std::string& ip, int port, int transId);
 
     void sendResponse(const std::string& ip, int port, const std::string& msg);
 
@@ -59,7 +60,7 @@ private:
     int _serverPort;
     
     // DTMF PTT Config
-    int _enableDtmfPtt;
+    bool _dtmfPttEnable;
     std::string _dtmfPushDigit;
     std::string _dtmfReleaseDigit;
 

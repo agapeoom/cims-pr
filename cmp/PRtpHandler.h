@@ -173,6 +173,8 @@ private:
   };
   
   PeerInfo _peers[2];
+  
+  PRtpTrans* _bridgePeer; // [P2P Bridge Support]
 
 public:
   PRtpTrans(const std::string & name);
@@ -196,6 +198,9 @@ public:
   // [Shared Session Support]
   void sendTo(const std::string& ip, int port, char* data, int len);
   void sendVideoTo(const std::string& ip, int port, char* data, int len);
+  
+  void setBridgePeer(PRtpTrans* peer) { _bridgePeer = peer; }
+  PRtpTrans* getBridgePeer() const { return _bridgePeer; }
 
   bool proc(); 
   bool proc(int id, const std::string & name, PEvent::Ptr spEvent);

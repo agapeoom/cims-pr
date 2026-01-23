@@ -22,10 +22,10 @@
 #include <map>
 
 #include "SipMutex.h"
-#include "XmlSipServer.h"
+#include "CspSipServer.h"
 
 // key = IP 주소 + 사용자 아이디
-typedef std::map<std::string, CXmlSipServer> SIP_SERVER_MAP;
+typedef std::map<std::string, CspSipServer> SIP_SERVER_MAP;
 
 /**
  * @ingroup CspServer
@@ -41,10 +41,10 @@ public:
     bool SetSipUserAgentRegisterInfo();
 
     bool Select( const char *pszIp, const char *pszUserId );
-    bool SelectRoutePrefix( const char *pszTo, CXmlSipServer &clsXmlSipServer, std::string &strTo );
+    bool SelectRoutePrefix( const char *pszTo, CspSipServer &clsCspSipServer, std::string &strTo );
     bool SelectIncomingRoute( const char *pszIp, const char *pszTo, std::string &strTo );
 
-    bool Insert( CXmlSipServer &clsXmlSipServer );
+    bool Insert( CspSipServer &clsCspSipServer );
     bool Set( CSipServerInfo *pclsInfo, int iStatus );
 
     void GetString( CMonitorString &strBuf );
@@ -54,7 +54,7 @@ private:
     CSipMutex m_clsMutex;
 
     bool ReadDir( const char *pszDirName );
-    void GetKey( CXmlSipServer &clsXmlSipServer, std::string &strKey );
+    void GetKey( CspSipServer &clsCspSipServer, std::string &strKey );
     void GetKey( const char *pszIp, const char *pszUserId, std::string &strKey );
 };
 

@@ -21,6 +21,7 @@
 #include "MemoryDebug.h"
 #include "RtpMap.h"
 #include "SipServer.h"
+#include "Log.h"
 
 CCallMap gclsCallMap;
 CCallMap gclsTransCallMap;
@@ -228,9 +229,11 @@ bool CCallMap::Delete( const char *pszCallId, bool bStopPort ) {
     m_clsMutex.release();
     if ( bStopPort && iPort > 0 ) {
         gclsRtpMap.Delete( iPort );
-        printf("[DEBUG] CallMap::Delete(%s) -> RtpMap::Delete(%d)\n", pszCallId, iPort);
+        // printf("[DEBUG] CallMap::Delete(%s) -> RtpMap::Delete(%d)\n", pszCallId, iPort);
+        CLog::Print( LOG_DEBUG, "CallMap::Delete(%s) -> RtpMap::Delete(%d)", pszCallId, iPort );
     } else {
-        printf("[DEBUG] CallMap::Delete(%s) SKIPPED RtpMap::Delete (iPort=%d, bStopPort=%d)\n", pszCallId, iPort, bStopPort);
+        // printf("[DEBUG] CallMap::Delete(%s) SKIPPED RtpMap::Delete (iPort=%d, bStopPort=%d)\n", pszCallId, iPort, bStopPort);
+        CLog::Print( LOG_DEBUG, "CallMap::Delete(%s) SKIPPED RtpMap::Delete (iPort=%d, bStopPort=%d)", pszCallId, iPort, bStopPort );
     }
     return bRes;
 }

@@ -27,18 +27,18 @@ bool PRtpTrans::init(const std::string & ipLoc, unsigned int portLoc, unsigned i
 {
     PAutoLock lock(_mutex);
     bool res = _rtpSock.init(ipLoc, portLoc);
-    printf("PRtpTrans::init rtp %s:%d\n", ipLoc.c_str(), portLoc);
+    printf("1. PRtpTrans::init rtp %s:%d\n", ipLoc.c_str(), portLoc);
     if(res) {
         // Init RTCP on port + 1
-        printf("PRtpTrans::init rtcp %s:%d\n", ipLoc.c_str(), portLoc + 1);
+        printf("2. PRtpTrans::init rtcp %s:%d\n", ipLoc.c_str(), portLoc + 1);
         res = _rtcpSock.init(ipLoc, portLoc + 1);
     }
     
     if (res && videoPortLoc > 0) {
-        printf("PRtpTrans::init video rtp %s:%d\n", ipLoc.c_str(), videoPortLoc);
+        printf("3. PRtpTrans::init video rtp %s:%d\n", ipLoc.c_str(), videoPortLoc);
         res = _videoRtpSock.init(ipLoc, videoPortLoc);
         if (res) {
-            printf("PRtpTrans::init video rtcp %s:%d\n", ipLoc.c_str(), videoPortLoc + 1);
+            printf("4. PRtpTrans::init video rtcp %s:%d\n", ipLoc.c_str(), videoPortLoc + 1);
             res = _videoRtcpSock.init(ipLoc, videoPortLoc + 1);
         }
     }
@@ -101,6 +101,13 @@ bool PRtpTrans::setRmt(const std::string & ipRmt, unsigned int portRmt, unsigned
         addr.sin_addr.s_addr = inet_addr(ip.c_str());
         addr.sin_port = htons(port);
     };
+
+    makeAddr(_peers[idx].addrRtp, ipRmt, portRmt);
+    makeAddr(_peers[idx].addrRtcp, ipRmt, portRmt + 1);
+    if (videoPortRmt > 0) {
+        makeAddr(_peers[idx].addrVideoRtp, ipRmt, videoPortRmt);
+        makeAddr(_peers[idx].addrVideoRtcp, ipRmt, videoPortRmt + 1);
+    }
 
     if (idx == 0) {
         _rtpSock.setRmt(ipRmt, portRmt);
@@ -181,6 +188,7 @@ bool PRtpTrans::proc()
             PAutoLock lock(_mutex);
             len = _rtpSock.recv(pkt, sizeof(pkt), ipRmt, portRmt);
             pGroup = _group;
+            //printf("[DEBUG] RTP Packet: IP=%s Port=%d Len=%d PT=%d SenderId=%s group=%p\n", ipRmt.c_str(), portRmt, len, pkt[1], "test", pGroup);
         }
 
         if (len > 0) {               

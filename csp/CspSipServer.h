@@ -63,10 +63,10 @@ typedef std::list<CIncomingRoute> INCOMING_ROUTE_LIST;
  * @ingroup CspServer
  * @brief IP-PBX 정보 저장 클래스
  */
-class CXmlSipServer : public CSipServerInfo {
+class CspSipServer : public CSipServerInfo {
 public:
-    CXmlSipServer();
-    ~CXmlSipServer();
+    CspSipServer();
+    ~CspSipServer();
 
     /** IP-PBX 이름 */
     std::string m_strName;

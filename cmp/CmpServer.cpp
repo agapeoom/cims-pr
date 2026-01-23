@@ -1,4 +1,5 @@
 #include "CmpServer.h"
+#include "SimpleJson.h"
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -12,6 +13,7 @@
 #include <cctype>
 #include "PRtpHandler.h"
 #include "McpttGroup.h"
+#include <fstream>
 
 CmpServer::CmpServer(const std::string& name, const std::string& configFile)
     : PModule(name), _running(false), _udpFd(-1), _configFile(configFile)
@@ -86,6 +88,7 @@ void CmpServer::runControlLoop() {
         int len = recvfrom(_udpFd, buf, sizeof(buf) - 1, 0, (struct sockaddr*)&clientAddr, &addrLen);
         if (len > 0) {
             buf[len] = '\0';
+            //printf("[CmpServer] Recv %d bytes from %s:%d: %s\n", len, inet_ntoa(clientAddr.sin_addr), ntohs(clientAddr.sin_port), buf);
             std::string ip = inet_ntoa(clientAddr.sin_addr);
             int port = ntohs(clientAddr.sin_port);
             handlePacket(buf, len, ip, port);
@@ -93,385 +96,357 @@ void CmpServer::runControlLoop() {
     }
 }
 
+// Modified to parse JSON packet
 void CmpServer::handlePacket(char* buf, int len, const std::string& ip, int port) {
-    std::string line(buf);
-    std::stringstream ss(line);
-    std::string token;
-    std::vector<std::string> tokens;
-    while (ss >> token) {
-        tokens.push_back(token);
-    }
-
-    // Protocol: TRANS_ID CSP_ID CSP_SESS CMP_ID CMP_SESS CMD ...
-    // Indices:  0        1      2        3      4        5
-    if (tokens.size() < 6) return; // Ignore invalid
-
-    std::string headerString = tokens[0] + " " + tokens[1] + " " + tokens[2] + " " + tokens[3] + " " + tokens[4];
-    std::string cmd = tokens[5];
+    if (len <= 0) return;
+    std::string strPacket(buf, len);
     
-    std::transform(cmd.begin(), cmd.end(), cmd.begin(),
-        [](unsigned char c){ return std::tolower(c); });
-
-    printf("CMD: %s (Header: %s)\n", cmd.c_str(), headerString.c_str());
-    fflush(stdout);
-
-    if (cmd == "add") {
-        processAdd(tokens, ip, port, headerString);
-    } else if (cmd == "remove") {
-        processRemove(tokens, ip, port, headerString);
-    } else if (cmd == "modify") {
-        processModify(tokens, ip, port, headerString);
-    } else if (cmd == "alive") {
-        processAlive(tokens, ip, port, headerString);
-    } else if (cmd == "addgroup") {
-        processAddGroup(tokens, ip, port, headerString);
-    } else if (cmd == "removegroup") {
-        processRemoveGroup(tokens, ip, port, headerString);
-    } else if (cmd == "joingroup") {
-        processJoinGroup(tokens, ip, port, headerString);
-    } else if (cmd == "leavegroup") {
-        processLeaveGroup(tokens, ip, port, headerString);
-    } else if (cmd == "modifygroup") {
-        processModifyGroup(tokens, ip, port, headerString);
-    }
-}
-
-// NOTE: All process functions now receive full tokens.
-// Payload starts at index 6 (CMD is 5).
-// Previous index 1 ("id") is now index 6.
-
-void CmpServer::processAdd(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header) {
-    // CMD: add <id> <rmt_ip> <rmt_port> [rmt_video_port] [peer_idx]
-    // Tokens: [0..4] [5=add] [6=id] [7=ip] [8=port] [9=vport] [10=pidx]
+    // Parse JSON Wrapper
+    SimpleJson::JsonNode root = SimpleJson::JsonNode::Parse(strPacket);
     
-    if (tokens.size() < 9) return;
-
-    std::string id = tokens[6];
-    std::string rmtIp = tokens[7];
-    int rmtPort = std::stoi(tokens[8]);
-    
-    int rmtVideoPort = 0;
-    if (tokens.size() >= 10) {
-        rmtVideoPort = std::stoi(tokens[9]);
-    }
-    
-    int peerIdx = -1;
-    if (tokens.size() >= 11) {
-        peerIdx = std::stoi(tokens[10]);
-    }
-
-    PAutoLock lock(_mutex);
-    if (_sessions.find(id) != _sessions.end()) {
-        PRtpTrans* rtp = _sessions[id];
-        rtp->setRmt(rmtIp, rmtPort, rmtVideoPort, peerIdx);
-        
-        std::string locIp = _rtpIp;
-        int locPort = rtp->getLocalPort();
-        int locVideoPort = rtp->getLocalVideoPort();
-        
-        std::string resp = header + " OK " + locIp + " " + std::to_string(locPort) + " " + std::to_string(locVideoPort);
-        sendResponse(ip, port, resp);
-        printf("[ADD] ID=%s (Updated) Peer=%d Rmt=%s:%d VideoRmt=%d -> Loc=%s:%d\n", 
-               id.c_str(), peerIdx, rmtIp.c_str(), rmtPort, rmtVideoPort, locIp.c_str(), locPort);
+    // Check trans_id and payload
+    if (root.type != SimpleJson::JSON_OBJECT) {
+        printf("[CmpServer] Invalid JSON Packet: %s\n", strPacket.c_str());
         return;
     }
 
-    std::string locIp = _rtpIp;
-    int locPort = 0;
-    int locVideoPort = 0;
+    int transId = (int)root.GetInt("trans_id", 0);
+    SimpleJson::JsonNode payload = root.Get("payload");
     
-    PRtpTrans* rtp = allocResource(locIp, locPort, locVideoPort);
-    if (!rtp) {
-        sendResponse(ip, port, header + " ERROR: No resources");
+    if (payload.type != SimpleJson::JSON_OBJECT) {
+        printf("[CmpServer] Missing Payload: %s\n", strPacket.c_str());
         return;
     }
-    
-    rtp->setSessionId(id);
-    rtp->setRmt(rmtIp, rmtPort, rmtVideoPort, peerIdx);
 
-    _sessions[id] = rtp;
-    
-    static int workerIdx = 0;
-    std::string wname = formatStr("RtpWorker_%d", workerIdx++ % 4);
-    rtp->setWorkerName(wname);
-    addHandler(wname, rtp);
+    // Extract CMD
+    std::string cmd = payload.GetString("cmd");
+    std::transform(cmd.begin(), cmd.end(), cmd.begin(), ::tolower); // normalize
 
-    std::string resp = header + " OK " + locIp + " " + std::to_string(locPort) + " " + std::to_string(locVideoPort);
-    sendResponse(ip, port, resp);
-    
-    printf("[ADD] ID=%s Rmt=%s:%d VideoRmt=%d -> Assigned Loc=%s:%d Worker=%s\n", 
-           id.c_str(), rmtIp.c_str(), rmtPort, rmtVideoPort, locIp.c_str(), locPort, wname.c_str());
+    // Dispatch
+    //printf("[CmpServer] Dispatching cmd=%s transId=%d\n", cmd.c_str(), transId);
+    if (cmd == "add") processAdd(payload, ip, port, transId);
+    else if (cmd == "remove") processRemove(payload, ip, port, transId);
+    else if (cmd == "alive") processAlive(payload, ip, port, transId);
+    else if (cmd == "addgroup") processAddGroup(payload, ip, port, transId);
+    else if (cmd == "joingroup") processJoinGroup(payload, ip, port, transId);
+    else if (cmd == "leavegroup") processLeaveGroup(payload, ip, port, transId);
+    else if (cmd == "removegroup") processRemoveGroup(payload, ip, port, transId);
+    else if (cmd == "modifygroup") processModifyGroup(payload, ip, port, transId);
+    else if (cmd == "modify") processModify(payload, ip, port, transId);
+    else {
+        printf("[CmpServer] Unknown CMD: %s\n", cmd.c_str());
+        SimpleJson::JsonNode resp;
+        resp.Set("trans_id", transId);
+        resp.Set("response", "ERROR Unknown Command");
+        sendResponse(ip, port, resp.ToString());
+    }
 }
 
-void CmpServer::processRemove(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header) {
-    if (tokens.size() < 7) return;
-    std::string id = tokens[6];
+void CmpServer::sendResponse(const std::string& ip, int port, const std::string& msg) {
+    //printf("[CmpServer] Sending %d bytes to %s:%d: %s\n", msg.length(), ip.c_str(), port, msg.c_str());
+    if (_udpFd != -1) {
+        struct sockaddr_in cliaddr;
+        memset(&cliaddr, 0, sizeof(cliaddr));
+        cliaddr.sin_family = AF_INET;
+        cliaddr.sin_port = htons(port);
+        cliaddr.sin_addr.s_addr = inet_addr(ip.c_str());
+        int sent = sendto(_udpFd, msg.c_str(), msg.length(), 0, (struct sockaddr*)&cliaddr, sizeof(cliaddr));
+        //printf("[CmpServer] Sent %d bytes to %s:%d: %s\n", sent, ip.c_str(), port, msg.c_str());
+    }
+}
 
+void CmpServer::processAlive(const SimpleJson::JsonNode& payload, const std::string& ip, int port, int transId) {
+    SimpleJson::JsonNode resp;
+    resp.Set("trans_id", transId);
+    resp.Set("response", "OK");
+    sendResponse(ip, port, resp.ToString());
+}
+
+void CmpServer::processAdd(const SimpleJson::JsonNode& payload, const std::string& ip, int port, int transId) {
+    std::string sessionId = payload.GetString("session_id");
+    std::string rmtIp = payload.GetString("remote_ip");
+    int rmtPort = (int)payload.GetInt("remote_port");
+    int rmtVideoPort = (int)payload.GetInt("remote_video_port");
+    int peerIdx = (int)payload.GetInt("peer_index");
+
+    std::string rtpIp = _serverIp; // Resource IP
+    int rtpPort = 0;
+    int videoPort = 0;
+    
+    PRtpTrans* rtp = NULL;
     PAutoLock lock(_mutex);
-    auto it = _sessions.find(id);
-    if (it != _sessions.end()) {
-        PRtpTrans* rtp = it->second;
+    
+    if (_sessions.find(sessionId) == _sessions.end()) {
+        rtp = allocResource(rtpIp, rtpPort, videoPort);
+        if (rtp) {
+            rtp->setSessionId(sessionId);
+            _sessions[sessionId] = rtp;
+        }
+    } else {
+        rtp = _sessions[sessionId];
+        rtpPort = rtp->getLocalPort(); // reuse existing
+        videoPort = rtp->getLocalVideoPort();
+    }
+
+    if (rtp) {
+        if (rmtPort > 0) {
+             rtp->setRmt(rmtIp, rmtPort, rmtVideoPort, peerIdx);
+        }
         
-        // Clean up handler from worker
+        static int workerIdx = 0;
+        if (rtp->getWorkerName().empty()) {
+             std::string wname = formatStr("RtpWorker_%d", workerIdx++ % 4);
+             rtp->setWorkerName(wname);
+             addHandler(wname, rtp);
+        }
+        
+        SimpleJson::JsonNode resp;
+        resp.Set("trans_id", transId);
+        SimpleJson::JsonNode respBody;
+        respBody.Set("status", "OK");
+        respBody.Set("local_ip", rtpIp);
+        respBody.Set("local_port", rtpPort);
+        respBody.Set("local_video_port", videoPort);
+        resp.Set("response", respBody.ToString()); 
+        sendResponse(ip, port, resp.ToString());
+        
+        printf("[ADD] ID=%s Rmt=%s:%d -> Loc=%s:%d\n", sessionId.c_str(), rmtIp.c_str(), rmtPort, rtpIp.c_str(), rtpPort);
+    } else {
+         SimpleJson::JsonNode resp;
+         resp.Set("trans_id", transId);
+         resp.Set("response", "ERROR No Resource");
+         sendResponse(ip, port, resp.ToString());
+    }
+}
+
+void CmpServer::processRemove(const SimpleJson::JsonNode& payload, const std::string& ip, int port, int transId) {
+    std::string sessionId = payload.GetString("session_id");
+    PAutoLock lock(_mutex);
+    if (_sessions.find(sessionId) != _sessions.end()) {
+        PRtpTrans* rtp = _sessions[sessionId];
         delHandler(rtp->getWorkerName(), rtp);
         rtp->reset();
-        
         freeResource(rtp);
-        _sessions.erase(it);
-        sendResponse(ip, port, header + " OK");
-        printf("[REMOVE] ID=%s\n", id.c_str());
-    } else {
-        sendResponse(ip, port, header + " ERROR: ID not found");
+        _sessions.erase(sessionId);
     }
-}
-
-void CmpServer::processModify(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header) {
-    if (tokens.size() < 9) return;
-    std::string id = tokens[6];
-    std::string rmtIp = tokens[7];
-    int rmtPort = std::stoi(tokens[8]);
-
-    PAutoLock lock(_mutex);
-    auto it = _sessions.find(id);
-    if (it != _sessions.end()) {
-        it->second->setRmt(rmtIp, rmtPort);
-        sendResponse(ip, port, header + " OK");
-        printf("[MODIFY] ID=%s Rmt=%s:%d\n", id.c_str(), rmtIp.c_str(), rmtPort);
-    } else {
-        sendResponse(ip, port, header + " ERROR: ID not found");
-    }
-}
-
-void CmpServer::processAlive(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header) {
-    sendResponse(ip, port, header + " OK");
-}
-
-void CmpServer::processAddGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header) {
-    // CMD: addgroup 0 <groupId> <count> <mem1:prio1> ...
-    std::string allTokens;
-    for (auto& t : tokens) allTokens += "[" + t + "] ";
-    printf("[CMD_DEBUG] AddGroup Tokens: %s\n", allTokens.c_str());
-
-
-
-
-    if (tokens.size() < 9) return;
-    std::string groupId = tokens[6];
-    int count = std::stoi(tokens[7]);
     
-    std::map<std::string, int> priorities;
-    for (int i=0; i<count; ++i) {
-        if (8+i < tokens.size()) {
-            std::string token = tokens[8+i];
-            size_t pos = token.find(':');
-            if (pos != std::string::npos) {
-                std::string id = token.substr(0, pos);
-                int prio = std::stoi(token.substr(pos+1));
-                priorities[id] = prio;
-            }
+    SimpleJson::JsonNode resp;
+    resp.Set("trans_id", transId);
+    resp.Set("response", "OK");
+    sendResponse(ip, port, resp.ToString());
+}
+
+void CmpServer::processModify(const SimpleJson::JsonNode& payload, const std::string& ip, int port, int transId) {
+    processAdd(payload, ip, port, transId);
+}
+
+void CmpServer::processAddGroup(const SimpleJson::JsonNode& payload, const std::string& ip, int port, int transId) {
+    std::string groupId = payload.GetString("group_id");
+    std::string membersStr = payload.GetString("members"); 
+    
+    std::string sharedIp = _serverIp;
+    int sharedPort = 0;
+    int sharedVideoPort = 0;
+    
+    PAutoLock lock(_mutex);
+    PRtpTrans* sharedSession = NULL;
+    McpttGroup* group = NULL;
+
+    if (_groups.find(groupId) == _groups.end()) {
+        group = new McpttGroup(groupId);
+        sharedSession = allocResource(sharedIp, sharedPort, sharedVideoPort);
+        if (sharedSession) {
+             sharedSession->setGroup(group);
+             group->setDtmfConfig(_dtmfPttEnable, _dtmfPushDigit, _dtmfReleaseDigit);
+             group->setSharedSession(sharedSession);
+             _groups[groupId] = group;
+
+             static int workerIdx = 0;
+             if (sharedSession->getWorkerName().empty()) {
+                  std::string wname = formatStr("RtpWorker_%d", workerIdx++ % 4);
+                  sharedSession->setWorkerName(wname);
+                  addHandler(wname, sharedSession);
+             }
+        } else {
+             delete group;
+             group = NULL;
         }
+    } else {
+        group = _groups[groupId];
     }
+    
+    printf("[CmpServer] processAddGroup Group=%p SharedSession=%p\n", group, sharedSession);
+
+    if (group) {
+        if (!membersStr.empty()) {
+            std::stringstream ss(membersStr);
+            std::string segment;
+            std::map<std::string, int> priorities;
+            while(std::getline(ss, segment, ',')) {
+                size_t colon = segment.find(':');
+                if (colon != std::string::npos) {
+                    std::string sid = segment.substr(0, colon);
+                    int prio = 0;
+                    try { prio = std::stoi(segment.substr(colon+1)); } catch(...) {}
+                    priorities[sid] = prio;
+                }
+            }
+            group->updatePriorities(priorities);
+        }
+        
+        SimpleJson::JsonNode resp;
+        resp.Set("trans_id", transId);
+        SimpleJson::JsonNode respBody;
+        respBody.Set("status", "OK");
+        respBody.Set("ip", sharedIp);
+        respBody.Set("port", sharedPort);
+        
+        resp.Set("response", respBody.ToString()); 
+        sendResponse(ip, port, resp.ToString());
+    } else {
+         SimpleJson::JsonNode resp;
+         resp.Set("trans_id", transId);
+         resp.Set("response", "ERROR Allocation Fail");
+         sendResponse(ip, port, resp.ToString());
+    }
+}
+
+void CmpServer::processJoinGroup(const SimpleJson::JsonNode& payload, const std::string& ip, int port, int transId) {
+    std::string groupId = payload.GetString("group_id");
+    std::string sessionId = payload.GetString("session_id");
+    std::string userIp = payload.GetString("user_ip");
+    int userPort = (int)payload.GetInt("user_port");
 
     PAutoLock lock(_mutex);
     if (_groups.find(groupId) != _groups.end()) {
-        PRtpTrans* rtp = _sessions[groupId]; 
         McpttGroup* group = _groups[groupId];
-        if (group) {
-             group->updatePriorities(priorities);
-        }
+        group->addMember(sessionId, userIp, userPort);
         
-        if (rtp) {
-             std::string locIp = _rtpIp;
-             int locPort = rtp->getLocalPort();
-             std::string resp = header + " OK " + locIp + " " + std::to_string(locPort);
-             sendResponse(ip, port, resp);
-             return;
-        }
-    }
-    
-    std::string locIp = _rtpIp;
-    int locPort = 0;
-    int locVideoPort = 0;
-    
-    PRtpTrans* rtp = allocResource(locIp, locPort, locVideoPort);
-    if (!rtp) {
-        sendResponse(ip, port, header + " ERROR: No resources");
-        return;
-    }
-    rtp->setSessionId(groupId);
-    _sessions[groupId] = rtp;
-
-    static int workerIdx = 0;
-    std::string wname = formatStr("RtpWorker_%d", workerIdx++ % 4);
-    rtp->setWorkerName(wname);
-    
-    McpttGroup* group = new McpttGroup(groupId);
-    group->setSharedSession(rtp);
-    group->updatePriorities(priorities); // Set priorities
-    
-    // [DTMF PTT]
-    if (_enableDtmfPtt) {
-        group->setDtmfConfig(true, _dtmfPushDigit, _dtmfReleaseDigit);
-    }
-    
-    rtp->setGroup(group);
-    
-    addHandler(wname, rtp);
-    
-    _groups[groupId] = group;
-    
-    std::string resp = header + " OK " + locIp + " " + std::to_string(locPort);
-    sendResponse(ip, port, resp);
-    printf("[ADD_GROUP] ID=%s SharedPort=%d Worker=%s Members=%d\n", groupId.c_str(), locPort, wname.c_str(), count);
-}
-
-void CmpServer::processModifyGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header) {
-    if (tokens.size() < 9) return;
-    std::string groupId = tokens[6];
-    int count = std::stoi(tokens[7]);
-    
-    std::map<std::string, int> priorities;
-    for (int i=0; i<count; ++i) {
-        if (8+i < tokens.size()) {
-            std::string token = tokens[8+i];
-            size_t pos = token.find(':');
-            if (pos != std::string::npos) {
-                std::string id = token.substr(0, pos);
-                int prio = std::stoi(token.substr(pos+1));
-                priorities[id] = prio;
-            }
-        }
-    }
-    
-    PAutoLock lock(_mutex);
-    auto it = _groups.find(groupId);
-    if (it != _groups.end()) {
-        it->second->updatePriorities(priorities);
-        sendResponse(ip, port, header + " OK");
-        printf("[MODIFY_GROUP] ID=%s Members=%d\n", groupId.c_str(), count);
+        SimpleJson::JsonNode resp;
+        resp.Set("trans_id", transId);
+        resp.Set("response", "OK");
+        sendResponse(ip, port, resp.ToString());
     } else {
-        sendResponse(ip, port, header + " ERROR: Group not found");
+        SimpleJson::JsonNode resp;
+        resp.Set("trans_id", transId);
+        resp.Set("response", "ERROR Group Not Found");
+        sendResponse(ip, port, resp.ToString());
     }
 }
 
-void CmpServer::processRemoveGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header) {
-    if (tokens.size() < 7) return;
-    std::string groupId = tokens[6];
-    
+void CmpServer::processLeaveGroup(const SimpleJson::JsonNode& payload, const std::string& ip, int port, int transId) {
+    std::string groupId = payload.GetString("group_id");
+    std::string sessionId = payload.GetString("session_id");
+
     PAutoLock lock(_mutex);
-    auto it = _groups.find(groupId);
-    if (it != _groups.end()) {
-        McpttGroup* group = it->second;
+    if (_groups.find(groupId) != _groups.end()) {
+        McpttGroup* group = _groups[groupId];
+        group->removeMember(sessionId);
+        
+        SimpleJson::JsonNode resp;
+        resp.Set("trans_id", transId);
+        resp.Set("response", "OK");
+        sendResponse(ip, port, resp.ToString());
+    } else {
+        SimpleJson::JsonNode resp;
+        resp.Set("trans_id", transId);
+        resp.Set("response", "ERROR Group Not Found");
+        sendResponse(ip, port, resp.ToString());
+    }
+}
+
+void CmpServer::processRemoveGroup(const SimpleJson::JsonNode& payload, const std::string& ip, int port, int transId) {
+    std::string groupId = payload.GetString("group_id");
+    PAutoLock lock(_mutex);
+    if (_groups.find(groupId) != _groups.end()) {
+        McpttGroup* group = _groups[groupId];
         delete group;
-        _groups.erase(it);
+        _groups.erase(groupId);
         
-        // Remove Shared Session
-        auto itSess = _sessions.find(groupId);
-        if (itSess != _sessions.end()) {
-            PRtpTrans* rtp = itSess->second;
-            delHandler(rtp->getWorkerName(), rtp);
-            rtp->reset();
-            freeResource(rtp);
-            _sessions.erase(itSess);
-        }
-
-        sendResponse(ip, port, header + " OK");
-        printf("[REMOVE_GROUP] ID=%s\n", groupId.c_str());
+        SimpleJson::JsonNode resp;
+        resp.Set("trans_id", transId);
+        resp.Set("response", "OK");
+        sendResponse(ip, port, resp.ToString());
     } else {
-        sendResponse(ip, port, header + " ERROR: Group not found");
+        SimpleJson::JsonNode resp;
+        resp.Set("trans_id", transId);
+        resp.Set("response", "ERROR Group Not Found");
+        sendResponse(ip, port, resp.ToString());
     }
 }
 
-
-
-void CmpServer::processLeaveGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header) {
-    if (tokens.size() < 8) return;
-    std::string groupId = tokens[6];
-    std::string sessionId = tokens[7];
-    
-    PAutoLock lock(_mutex);
-    auto groupIt = _groups.find(groupId);
-    if (groupIt != _groups.end()) {
-        groupIt->second->removeMember(sessionId);
-        sendResponse(ip, port, header + " OK");
-        printf("[LEAVE_GROUP] Group=%s Session=%s\n", groupId.c_str(), sessionId.c_str());
-    } else {
-        sendResponse(ip, port, header + " ERROR: Group not found");
-    }
+void CmpServer::processModifyGroup(const SimpleJson::JsonNode& payload, const std::string& ip, int port, int transId) {
+     processAddGroup(payload, ip, port, transId);
 }
-    
-
-
-void CmpServer::processJoinGroup(const std::vector<std::string>& tokens, const std::string& ip, int port, const std::string& header) {
-    // Debug: Print all tokens
-    std::string allTokens;
-    for (auto& t : tokens) allTokens += "[" + t + "] ";
-    printf("[CMD_DEBUG] JoinGroup Tokens: %s\n", allTokens.c_str());
-
-    // Expected format: CSP_MAIN <callId> CMP_MAIN 0 joingroup <groupId> <sessionId> <userIp> <userPort>
-    if (tokens.size() < 10) {
-        printf("[CMD_ERROR] JoinGroup Token Count %d < 10. Ignoring.\n", (int)tokens.size());
-        sendResponse(ip, port, header + " ERROR: Invalid Args");
-        return;
-    }
-    std::string groupId = tokens[6];
-    std::string sessionId = tokens[7];
-    std::string userIp = tokens[8];
-    int userPort = std::stoi(tokens[9]);
-
-    PAutoLock lock(_mutex);
-    auto groupIt = _groups.find(groupId);
-    if (groupIt == _groups.end()) {
-        printf("[CMD_ERROR] JoinGroup Group %s not found. Ignoring.\n", groupId.c_str());
-        sendResponse(ip, port, header + " ERROR: Group not found");
-        return;
-    }
-    printf("0. [JOIN_GROUP] Group=%s Session=%s Peer=%s:%d\n", groupId.c_str(), sessionId.c_str(), userIp.c_str(), userPort);
-
-    groupIt->second->addMember(sessionId, userIp, userPort);
-
-    sendResponse(ip, port, header + " OK");
-    printf("1. [JOIN_GROUP] Group=%s Session=%s Peer=%s:%d\n", groupId.c_str(), sessionId.c_str(), userIp.c_str(), userPort);
-}    
-
-
-void CmpServer::sendResponse(const std::string& ip, int port, const std::string& msg) {
-    // Send back to origin (which is CSP Port)
-    struct sockaddr_in addr;
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = inet_addr(ip.c_str());
-    addr.sin_port = htons(port);
-
-    sendto(_udpFd, msg.c_str(), msg.length(), 0, (struct sockaddr*)&addr, sizeof(addr));
-}
-
-
-
-// ... (skip to loadConfig)
 
 void CmpServer::loadConfig() {
-    FILE* fp = fopen(_configFile.c_str(), "r");
-    if (fp) {
-        char line[256];
-        while (fgets(line, sizeof(line), fp)) {
-            char key[128], val[128];
-            if (sscanf(line, "%[^=]=%s", key, val) == 2) {
-                if (strcmp(key, "RtpStartPort") == 0) _rtpStartPort = atoi(val);
-                if (strcmp(key, "RtpPoolSize") == 0) _rtpPoolSize = atoi(val);
-                if (strcmp(key, "RtpIp") == 0) _rtpIp = val;
-                if (strcmp(key, "ServerIp") == 0) _serverIp = val;
-                if (strcmp(key, "ServerPort") == 0) _serverPort = atoi(val);
-                if (strcmp(key, "EnableDtmfPtt") == 0) _enableDtmfPtt = atoi(val);
-                if (strcmp(key, "DtmfPushDigit") == 0) _dtmfPushDigit = val;
-                if (strcmp(key, "DtmfReleaseDigit") == 0) _dtmfReleaseDigit = val;
-                // CspIp/Port removed from config by user request
-            }
+    std::ifstream t(_configFile);
+    if (!t.is_open()) {
+        if (_configFile.find(".json") != std::string::npos) {
+             printf("Failed to open config file: %s\n", _configFile.c_str());
+             return;
         }
-        fclose(fp);
+        // Fallback to old logic if file not json or failed? 
+        // For now, assume if extension is .json, we use JSON loader.
     }
+    
+    // Check extension
+    if (_configFile.substr(_configFile.find_last_of(".") + 1) == "json") {
+        std::stringstream buffer;
+        buffer << t.rdbuf();
+        std::string jsonContent = buffer.str();
+        
+        SimpleJson::JsonNode root = SimpleJson::JsonNode::Parse(jsonContent);
+        
+        if (root.Has("RtpStartPort")) _rtpStartPort = (int)root.GetInt("RtpStartPort");
+        if (root.Has("RtpPoolSize")) _rtpPoolSize = (int)root.GetInt("RtpPoolSize");
+        if (root.Has("RtpIp")) _rtpIp = root.GetString("RtpIp");
+        if (root.Has("ServerIp")) _serverIp = root.GetString("ServerIp");
+        if (root.Has("ServerPort")) _serverPort = (int)root.GetInt("ServerPort");
+        
+        if (root.Has("EnableDtmfPtt")) {
+             // Supports boolean or int in JSON
+             SimpleJson::JsonNode val = root.Get("EnableDtmfPtt");
+             // Minimal parser stores bool as ??? 
+             // Int check:
+             // Our parser doesn't have explicit BOOL type, likely stores "true"/"false" as string or 0/1 as int.
+             // Let's check string, then int.
+             std::string sVal = root.GetString("EnableDtmfPtt");
+             if (sVal == "true") _dtmfPttEnable = true;
+             else if (sVal == "false") _dtmfPttEnable = false;
+             else _dtmfPttEnable = (root.GetInt("EnableDtmfPtt") != 0);
+        }
+        
+        if (root.Has("DtmfPushDigit")) _dtmfPushDigit = root.GetString("DtmfPushDigit");
+        if (root.Has("DtmfReleaseDigit")) _dtmfReleaseDigit = root.GetString("DtmfReleaseDigit");
+        
+        // CspIp/Port if needed
+        
+    } else {
+        // Legacy .conf loader
+        FILE* fp = fopen(_configFile.c_str(), "r");
+        if (fp) {
+            char line[256];
+            while (fgets(line, sizeof(line), fp)) {
+                char key[128], val[128];
+                if (sscanf(line, "%[^=]=%s", key, val) == 2) {
+                    if (strcmp(key, "RtpStartPort") == 0) _rtpStartPort = atoi(val);
+                    if (strcmp(key, "RtpPoolSize") == 0) _rtpPoolSize = atoi(val);
+                    if (strcmp(key, "RtpIp") == 0) _rtpIp = val;
+                    if (strcmp(key, "ServerIp") == 0) _serverIp = val;
+                    if (strcmp(key, "ServerPort") == 0) _serverPort = atoi(val);
+                    if (strcmp(key, "EnableDtmfPtt") == 0) _dtmfPttEnable = strcmp(val, "true") == 0;
+                    if (strcmp(key, "DtmfPushDigit") == 0) _dtmfPushDigit = val;
+                    if (strcmp(key, "DtmfReleaseDigit") == 0) _dtmfReleaseDigit = val;
+                }
+            }
+            fclose(fp);
+        }
+    }
+
     printf("Config: RtpStartPort=%d, RtpPoolSize=%d, RtpIp=%s, ServerIp=%s, ServerPort=%d, DtmfPtt=%d Push=%s Rel=%s\n", 
            _rtpStartPort, _rtpPoolSize, _rtpIp.c_str(), _serverIp.c_str(), _serverPort, 
-           _enableDtmfPtt, _dtmfPushDigit.c_str(), _dtmfReleaseDigit.c_str());
+           _dtmfPttEnable, _dtmfPushDigit.c_str(), _dtmfReleaseDigit.c_str());
 }
 
 void CmpServer::initResourcePool() {
@@ -502,9 +477,13 @@ PRtpTrans* CmpServer::allocResource(std::string& rtpIp, int& rtpPort, int& video
     rtpPort = rtp->getLocalPort(); 
     videoPort = rtp->getLocalVideoPort();
     
+    printf("[CmpServer] allocResource: Returning port %d (Remaining %lu)\n", rtpPort, _freeResources.size());
     return rtp;
 }
 
 void CmpServer::freeResource(PRtpTrans* rtp) {
-    _freeResources.push_back(rtp);
+    if (rtp) {
+        printf("[CmpServer] freeResource: Freeing port %d\n", rtp->getLocalPort());
+        _freeResources.push_back(rtp);
+    }
 }

@@ -296,11 +296,13 @@ add_custom_target(dist
 
     # 3. Copy Configurations
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/cmp/cmp.conf ${CMAKE_BINARY_DIR}/dist/cmp/config/
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/cmp/cmp.json ${CMAKE_BINARY_DIR}/dist/cmp/config/
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/csp/csp.xml ${CMAKE_BINARY_DIR}/dist/csp/config/
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/csp/csp.json ${CMAKE_BINARY_DIR}/dist/csp/config/
     
     # Copy CSP XML Resources to new locations
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/csp/GroupXml ${CMAKE_BINARY_DIR}/dist/csp/group
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/csp/UserXml ${CMAKE_BINARY_DIR}/dist/csp/user
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/csp/Group ${CMAKE_BINARY_DIR}/dist/csp/group
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/csp/User ${CMAKE_BINARY_DIR}/dist/csp/user
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/csp/SipServerXml ${CMAKE_BINARY_DIR}/dist/csp/route
 
     # 4. Copy Certificates

@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (C) 2012 Yee Young Han <websearch@naver.com> (http://blog.naver.com/websearch)
  *
  * This program is free software; you can redistribute it and/or modify
@@ -13,7 +13,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA 
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include "GroupCallService.h"
 
@@ -38,7 +38,7 @@ bool AddChallenge( CSipMessage * psttResponse )
 	clsChallenge.m_strType = "Digest";
 	clsChallenge.m_strNonce = szNonce;
 	clsChallenge.m_strRealm = gclsSetup.m_strRealm;
-	
+
 	psttResponse->m_clsWwwAuthenticateList.push_back( clsChallenge );
 
   return true;
@@ -62,9 +62,9 @@ bool SendUnAuthorizedResponse( CSipMessage * pclsMessage )
 	return true;
 }
 
-/** 
+/**
  * @ingroup CspServer
- * @brief	response 가 유효한 값인지 검사한다. 
+ * @brief	response 가 유효한 값인지 검사한다.
  * @param	pszUserName	사용자 아이디
  * @param	pszRealm		realm
  * @param	pszNonce		nonce
@@ -82,26 +82,26 @@ bool CheckAuthorizationResponse( const char * pszUserName
 		, const char * pszPassWord
 		, const char * pszMethod )
 {
-	char	szA1[301], szA2[201], szMd5[33], szResponse[201];
-	
+	char	szA1[301], szA2[201], szMd5[33], szResponse[1024];
+
 	snprintf( szA1, sizeof(szA1), "%s:%s:%s", pszUserName, pszRealm, pszPassWord );
 	SipMd5String( szA1, szMd5 );
 	snprintf( szA1, sizeof(szA1), "%s", szMd5 );
-	
+
 	snprintf( szA2, sizeof(szA2), "%s:%s", pszMethod, pszUri );
 	SipMd5String( szA2, szMd5 );
 	snprintf( szA2, sizeof(szA2), "%s", szMd5 );
-	
+
 	snprintf( szResponse, sizeof(szResponse), "%s:%s:%s", szA1, pszNonce, szA2 );
 	SipMd5String( szResponse, szMd5 );
 	snprintf( szResponse, sizeof(szResponse), "%s", szMd5 );
-	
+
 	if( strcmp( szResponse, pszResponse ) )
 	{
 		CLog::Print( LOG_ERROR, "response[%s] is not correct. correct response is [%s]", pszResponse, szResponse );
 		return false;
 	}
-	
+
 	return true;
 }
 
@@ -118,7 +118,7 @@ enum ECheckAuthResult
 
 /**
  * @ingroup CspServer
- * @brief 
+ * @brief
  * @param pclsCredential	SIP 인증 정보 저장 객체
  * @param pszMethod				SIP 메소드
  * @param clsXmlUser			사용자 정보 저장 객체
@@ -126,11 +126,11 @@ enum ECheckAuthResult
  *					존재하지 않는 nonce 인 경우 E_AUTH_NONCE_NOT_FOUND 를 리턴한다.
  *					그 외의 오류는 E_AUTH_ERROR 를 리턴한다.
  */
-ECheckAuthResult CheckAuthorization( CSipCredential * pclsCredential, const char * pszMethod, CXmlUser & clsXmlUser )
+ECheckAuthResult CheckAuthorization( CSipCredential * pclsCredential, const char * pszMethod, CspUser & clsXmlUser )
 {
 	if( pclsCredential->m_strUserName.empty() ) return E_AUTH_ERROR;
 	if( gclsNonceMap.Select( pclsCredential->m_strNonce.c_str() ) == false ) return E_AUTH_NONCE_NOT_FOUND;
-	if( SelectUser( pclsCredential->m_strUserName.c_str(), clsXmlUser ) == false ) return E_AUTH_ERROR;
+	if( gclsCspUserMap.Select( pclsCredential->m_strUserName.c_str(), clsXmlUser ) == false ) return E_AUTH_ERROR;
 	if( CheckAuthorizationResponse( pclsCredential->m_strUserName.c_str(), pclsCredential->m_strRealm.c_str(), pclsCredential->m_strNonce.c_str(), pclsCredential->m_strUri.c_str()
 				, pclsCredential->m_strResponse.c_str(), clsXmlUser.m_strPassWord.c_str(), pszMethod ) == false ) return E_AUTH_ERROR;
 
@@ -158,37 +158,8 @@ bool CSipServer::RecvRequestRegister( int iThreadId, CSipMessage * pclsMessage )
 			return true;
 		}
 	}
-#if 0 //by hak. 230605
-	if( pclsMessage->m_iExpires > 0 && gclsSetup.IsAllowClientIp( pclsMessage->m_strClientIp.c_str() ) == false )
-	{
-		SendResponse( pclsMessage, SIP_FORBIDDEN );
-		return true;
-	}
 
-	SIP_CREDENTIAL_LIST::iterator	itCL = pclsMessage->m_clsAuthorizationList.begin();
-
-	if( itCL == pclsMessage->m_clsAuthorizationList.end() )
-	{
-		return SendUnAuthorizedResponse( pclsMessage );
-	}
-
-	CXmlUser	clsXmlUser;
-
-	ECheckAuthResult eRes = CheckAuthorization( &(*itCL), pclsMessage->m_strSipMethod.c_str(), clsXmlUser );
-	switch( eRes )
-	{
-	case E_AUTH_NONCE_NOT_FOUND:
-		SendUnAuthorizedResponse( pclsMessage );
-		return true;
-	case E_AUTH_ERROR:
-		SendResponse( pclsMessage, SIP_FORBIDDEN );
-		return true;
-	default:
-		break;
-	}
-#else
-        CXmlUser        clsXmlUser;
-#endif
+    CspUser        clsUser;
 	if( pclsMessage->GetExpires() == 0 )
 	{
 		gclsUserMap.Delete( pclsMessage->m_clsFrom.m_clsUri.m_strUser.c_str() );
@@ -199,20 +170,28 @@ bool CSipServer::RecvRequestRegister( int iThreadId, CSipMessage * pclsMessage )
 	{
 		CSipFrom clsContact;
 
-                SelectUser( pclsMessage->m_clsFrom.m_clsUri.m_strUser.c_str(), clsXmlUser );
-		if( gclsUserMap.Insert( pclsMessage, &clsContact, &clsXmlUser ) )
-		{
-			CSipMessage * pclsResponse = pclsMessage->CreateResponseWithToTag( SIP_OK );
-			if( pclsResponse == NULL ) return false;
+		if( gclsCspUserMap.Select( pclsMessage->m_clsFrom.m_clsUri.m_strUser.c_str(), clsUser ))
+		{ 
+			if( gclsUserMap.Insert( pclsMessage, &clsContact, &clsUser ) )
+			{
+				CSipMessage * pclsResponse = pclsMessage->CreateResponseWithToTag( SIP_OK );
+				if( pclsResponse == NULL ) return false;
 
-			pclsResponse->m_clsContactList.push_back( clsContact );
-			pclsResponse->AddHeader( "Expires", 3600 ); //by hak add.
+				pclsResponse->m_clsContactList.push_back( clsContact );
+				pclsResponse->AddHeader( "Expires", 3600 ); //by hak add.
 
-			gclsUserAgent.m_clsSipStack.SendSipMessage( pclsResponse );
-                        // [GROUP CALL AUTO JOIN]
-                        if ( !clsXmlUser.m_strGroupId.empty() ) {
-                             gclsGroupCallService.InviteMember( clsXmlUser.m_strId.c_str(), clsXmlUser.m_strGroupId.c_str() );
-                        }
+				gclsUserAgent.m_clsSipStack.SendSipMessage( pclsResponse );
+                
+                // [FIX for P2P Call] Update CspUserMap (JSON Map) registration time.
+                // Otherwise isAlive returns false (timeout) because time is 0.
+                gclsCspUserMap.registerUser( clsUser.m_strId, "" ); // Password already verified during Auth or trusted here
+				// [GROUP CALL AUTO JOIN]
+                /*
+				if ( !clsUser.m_strOrganizationId.empty() ) {
+					gclsGroupCallService.InviteMember( clsUser.m_strId.c_str(), clsUser.m_strOrganizationId.c_str() );
+				}
+                */
+			}
 		}
 		else
 		{

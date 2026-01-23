@@ -5,6 +5,7 @@ include_directories(
    ./
    ${PMP_INC}
    ${PMPROC_INC}
+   ${CMAKE_CURRENT_SOURCE_DIR}/../include
 )
 
 #   ${FFM_LIB_PATH}
@@ -29,5 +30,7 @@ install(TARGETS ${TEST_SRCS}
 	    RUNTIME DESTINATION ${PMPROC_BIN_PATH}
 		LIBRARY DESTINATION ${PMPROC_LIB_PATH}
 		ARCHIVE DESTINATION ${PMPROC_LIB_PATH})
+
+install(FILES cmp.conf cmp.json DESTINATION ${PMPROC_BIN_PATH}/../config)
 
 

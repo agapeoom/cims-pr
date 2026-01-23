@@ -32,7 +32,7 @@
 #include "SipUtility.h"
 #include "TimeString.h"
 #include "UserMap.h"
-#include "XmlUser.h"
+#include "CspUser.h"
 
 CSipServer gclsSipServer;
 CSipUserAgent gclsUserAgent;
@@ -74,7 +74,7 @@ bool CSipServer::Start( CSipStackSetup &clsSetup ) {
 bool CSipServer::RecvRequest( int iThreadId, CSipMessage *pclsMessage ) {
     std::string strCallId;
     pclsMessage->GetCallId( strCallId );
-    printf( "[DEBUG] RecvRequest: Method=%s CallId=%s\n", pclsMessage->m_strSipMethod.c_str(), strCallId.c_str() );
+    CLog::Print( LOG_DEBUG, "RecvRequest: Method=%s CallId=%s", pclsMessage->m_strSipMethod.c_str(), strCallId.c_str() );
     if ( pclsMessage->IsMethod( SIP_METHOD_REGISTER ) ) {
         return RecvRequestRegister( iThreadId, pclsMessage );
     }
@@ -179,7 +179,7 @@ void CSipServer::SaveCdr( const char *pszCallId, int iSipStatus ) {
  * @param iSipStatus	응답 코드
  */
 void CSipServer::StopCall( const char *pszCallId, int iResponseCode ) {
-    printf( "[DEBUG] StopCall: CallId=%s Code=%d\n", pszCallId, iResponseCode );
+    CLog::Print( LOG_DEBUG, "StopCall: CallId=%s Code=%d", pszCallId, iResponseCode );
     SaveCdr( pszCallId, iResponseCode );
     gclsUserAgent.StopCall( pszCallId, iResponseCode );
 }

@@ -33,11 +33,7 @@ CSipServerMap::CSipServerMap() {
 CSipServerMap::~CSipServerMap() {
 }
 
-/**
- * @ingroup CspServer
- * @brief XML 파일 또는 MySQL 에서 IP-PBX 정보를 읽는다.
- * @returns 성공하면 true 를 리턴하고 실패하면 false 를 리턴한다.
- */
+// JSON 파일 또는 MySQL 에서 IP-PBX 정보를 읽는다. 
 bool CSipServerMap::Load() {
     bool bRes = false;
     SIP_SERVER_MAP::iterator itMap;
@@ -49,20 +45,15 @@ bool CSipServerMap::Load() {
     }
     m_clsMutex.release();
 
-    if ( gclsSetup.m_strSipServerXmlFolder.length() > 0 ) {
+    if ( gclsSetup.m_strSipServerDataFolder.length() > 0 ) {
         CLog::Print( LOG_DEBUG, "SipServerMap Load" );
-        bRes = ReadDir( gclsSetup.m_strSipServerXmlFolder.c_str() );
+        bRes = ReadDir( gclsSetup.m_strSipServerDataFolder.c_str() );
     }
 
     return bRes;
 }
 
-/**
- * @ingroup CspServer
- * @brief 폴더에서 IP-PBX 정보를 저장한 XML 파일을 읽어서 자료구조에 저장한다.
- * @param pszDirName 폴더 full path
- * @returns 성공하면 true 를 리턴하고 실패하면 false 를 리턴한다.
- */
+// 폴더에서 IP-PBX 정보를 저장한 JSON 파일을 읽어서 자료구조에 저장한다.
 bool CSipServerMap::ReadDir( const char *pszDirName ) {
     FILE_LIST clsFileList;
     FILE_LIST::iterator itFL;
@@ -71,25 +62,21 @@ bool CSipServerMap::ReadDir( const char *pszDirName ) {
     if ( CDirectory::FileList( pszDirName, clsFileList ) == false ) return false;
 
     for ( itFL = clsFileList.begin(); itFL != clsFileList.end(); ++itFL ) {
-        CXmlSipServer clsXml;
+        CspSipServer clsSipServer;
 
         strFileName = pszDirName;
         CDirectory::AppendName( strFileName, itFL->c_str() );
 
-        if ( clsXml.Parse( strFileName.c_str() ) ) {
-            clsXml.m_strName = itFL->c_str();
-            Insert( clsXml );
+        if ( clsSipServer.Parse( strFileName.c_str() ) ) {
+            clsSipServer.m_strName = itFL->c_str();
+            Insert( clsSipServer );
         }
     }
 
     return true;
 }
 
-/**
- * @ingroup CspServer
- * @brief IP-PBX 정보 저장 자료구조의 정보를 SipUserAgent 라이브러리에 전달한다.
- * @returns true 를 리턴한다.
- */
+// IP-PBX 정보 저장 자료구조의 정보를 SipUserAgent 라이브러리에 전달한다.
 bool CSipServerMap::SetSipUserAgentRegisterInfo() {
     SIP_SERVER_MAP::iterator itMap, itNext;
 
@@ -118,13 +105,10 @@ bool CSipServerMap::SetSipUserAgentRegisterInfo() {
     return true;
 }
 
-/**
- * @ingroup CspServer
- * @brief IP-PBX 정보 저장 자료구조에 존재하는지 검사한다.
- * @param pszIp			IP-PBX 의 IP 주소
- * @param pszUserId IP-PBX 에 로그인한 사용자 아이디
- * @returns IP-PBX 정보 저장 자료구조에 존재하면 true 를 리턴하고 그렇지 않으면 false 를 리턴한다.
- */
+// IP-PBX 정보 저장 자료구조에 존재하는지 검사한다.
+// pszIp			IP-PBX 의 IP 주소
+// pszUserId IP-PBX 에 로그인한 사용자 아이디
+// @returns IP-PBX 정보 저장 자료구조에 존재하면 true 를 리턴하고 그렇지 않으면 false 를 리턴한다.
 bool CSipServerMap::Select( const char *pszIp, const char *pszUserId ) {
     std::string strKey;
     bool bRes = false;
@@ -142,16 +126,13 @@ bool CSipServerMap::Select( const char *pszIp, const char *pszUserId ) {
     return bRes;
 }
 
-/**
- * @ingroup CspServer
- * @brief IP-PBX 정보 저장 자료구조를 검색하여서 수신자 전화번호에 대한 routing 정보를 가지고 있는 IP-PBX 정보를
- * 저장한다.
- * @param pszTo						수신자 전화번호
- * @param clsXmlSipServer IP-PBX 정보 저장 객체
- * @param strTo						INVITE 메시지를 전송할 때 사용할 수신자 전화번호
- * @returns 검색에 성공하면 true 를 리턴하고 그렇지 않으면 false 를 리턴한다.
- */
-bool CSipServerMap::SelectRoutePrefix( const char *pszTo, CXmlSipServer &clsXmlSipServer, std::string &strTo ) {
+// IP-PBX 정보 저장 자료구조를 검색하여서 수신자 전화번호에 대한 routing 정보를 가지고 있는 IP-PBX 정보를
+// 저장한다.
+// @param pszTo						수신자 전화번호
+// @param clsCspSipServer IP-PBX 정보 저장 객체
+// @param strTo						INVITE 메시지를 전송할 때 사용할 수신자 전화번호
+// @returns 검색에 성공하면 true 를 리턴하고 그렇지 않으면 false 를 리턴한다.
+bool CSipServerMap::SelectRoutePrefix( const char *pszTo, CspSipServer &clsCspSipServer, std::string &strTo ) {
     SIP_SERVER_MAP::iterator itMap;
     ROUTE_PREFIX_LIST::iterator itList;
     bool bRes = false;
@@ -162,7 +143,7 @@ bool CSipServerMap::SelectRoutePrefix( const char *pszTo, CXmlSipServer &clsXmlS
             for ( itList = itMap->second.m_clsRoutePrefixList.begin();
                   itList != itMap->second.m_clsRoutePrefixList.end(); ++itList ) {
                 if ( !strncmp( itList->m_strPrefix.c_str(), pszTo, itList->m_strPrefix.length() ) ) {
-                    clsXmlSipServer = itMap->second;
+                    clsCspSipServer = itMap->second;
 
                     if ( itList->m_bDeletePrefix ) {
                         strTo = pszTo + itList->m_strPrefix.length();
@@ -183,14 +164,11 @@ bool CSipServerMap::SelectRoutePrefix( const char *pszTo, CXmlSipServer &clsXmlS
     return bRes;
 }
 
-/**
- * @ingroup CspServer
- * @brief IP-PBX 에서 수신한 전화 요청과 매핑되는 CspServer 아이디를 검색한다.
- * @parma pszIp	IP-PBX IP 주소
- * @param pszTo IP-PBX 에서 전송한 SIP 메시지의 TO 아이디
- * @param strTo CspServer 아이디
- * @returns 검색에 성공하면 true 를 리턴하고 그렇지 않으면 false 를 리턴한다.
- */
+// IP-PBX 에서 수신한 전화 요청과 매핑되는 CspServer 아이디를 검색한다.
+// @parma pszIp	IP-PBX IP 주소
+// @param pszTo IP-PBX 에서 전송한 SIP 메시지의 TO 아이디
+// @param strTo CspServer 아이디
+// @returns 검색에 성공하면 true 를 리턴하고 그렇지 않으면 false 를 리턴한다.
 bool CSipServerMap::SelectIncomingRoute( const char *pszIp, const char *pszTo, std::string &strTo ) {
     SIP_SERVER_MAP::iterator itMap;
     INCOMING_ROUTE_LIST::iterator itList;
@@ -220,72 +198,60 @@ bool CSipServerMap::SelectIncomingRoute( const char *pszIp, const char *pszTo, s
     return bRes;
 }
 
-/**
- * @ingroup CspServer
- * @brief IP-PBX 정보 저장 자료구조의 key 문자열을 생성한다.
- * @param clsXmlSipServer IP-PBX 정보 저장 객체
- * @param strKey					key 문자열을 저장할 변수
- */
-void CSipServerMap::GetKey( CXmlSipServer &clsXmlSipServer, std::string &strKey ) {
-    strKey = clsXmlSipServer.m_strIp;
+// IP-PBX 정보 저장 자료구조의 key 문자열을 생성한다.
+// @param clsCspSipServer IP-PBX 정보 저장 객체
+// @param strKey					key 문자열을 저장할 변수
+void CSipServerMap::GetKey( CspSipServer &clsCspSipServer, std::string &strKey ) {
+    strKey = clsCspSipServer.m_strIp;
     strKey.append( "_" );
-    strKey.append( clsXmlSipServer.m_strUserId );
+    strKey.append( clsCspSipServer.m_strUserId );
 }
 
-/**
- * @ingroup CspServer
- * @brief IP-PBX 정보 저장 자료구조의 key 문자열을 생성한다.
- * @param pszIp			IP-PBX IP 주소
- * @param pszUserId 로그인 아이디
- * @param strKey		key 문자열을 저장할 변수
- */
+// IP-PBX 정보 저장 자료구조의 key 문자열을 생성한다.
+// @param pszIp			IP-PBX IP 주소
+// @param pszUserId 로그인 아이디
+// @param strKey		key 문자열을 저장할 변수
 void CSipServerMap::GetKey( const char *pszIp, const char *pszUserId, std::string &strKey ) {
     strKey = pszIp;
     strKey.append( "_" );
     strKey.append( pszUserId );
 }
 
-/**
- * @ingroup CspServer
- * @brief IP-PBX 정보 저장 자료구조에 존재하지 않으면 추가하고
- *				IP-PBX 정보 저장 자료구조에 존재하면 정보 수정 여부를 검사하여서 수정된 경우 IP-PBX 정보를 수정한다.
- * @param clsXmlSipServer IP-PBX 정보 저장 객체
- * @returns true 를 리턴한다.
- */
-bool CSipServerMap::Insert( CXmlSipServer &clsXmlSipServer ) {
+// IP-PBX 정보 저장 자료구조에 존재하지 않으면 추가하고
+// IP-PBX 정보 저장 자료구조에 존재하면 정보 수정 여부를 검사하여서 수정된 경우 IP-PBX 정보를 수정한다.
+// @param clsCspSipServer IP-PBX 정보 저장 객체
+// @returns true 를 리턴한다.
+bool CSipServerMap::Insert( CspSipServer &clsCspSipServer ) {
     SIP_SERVER_MAP::iterator itMap;
     std::string strKey;
 
-    GetKey( clsXmlSipServer, strKey );
+    GetKey( clsCspSipServer, strKey );
 
     m_clsMutex.acquire();
     itMap = m_clsMap.find( strKey );
     if ( itMap == m_clsMap.end() ) {
-        clsXmlSipServer.m_iFlag = FLAG_INSERT;
-        m_clsMap.insert( SIP_SERVER_MAP::value_type( strKey, clsXmlSipServer ) );
+        clsCspSipServer.m_iFlag = FLAG_INSERT;
+        m_clsMap.insert( SIP_SERVER_MAP::value_type( strKey, clsCspSipServer ) );
     } else {
-        if ( strcmp( itMap->second.m_strDomain.c_str(), clsXmlSipServer.m_strDomain.c_str() ) ||
-             strcmp( itMap->second.m_strPassWord.c_str(), clsXmlSipServer.m_strPassWord.c_str() ) ||
-             itMap->second.m_iPort != clsXmlSipServer.m_iPort ) {
-            clsXmlSipServer.m_iFlag = FLAG_UPDATE;
+        if ( strcmp( itMap->second.m_strDomain.c_str(), clsCspSipServer.m_strDomain.c_str() ) ||
+             strcmp( itMap->second.m_strPassWord.c_str(), clsCspSipServer.m_strPassWord.c_str() ) ||
+             itMap->second.m_iPort != clsCspSipServer.m_iPort ) {
+            clsCspSipServer.m_iFlag = FLAG_UPDATE;
         } else {
             itMap->second.m_iFlag = FLAG_NO_CHANGE;
         }
 
-        itMap->second = clsXmlSipServer;
+        itMap->second = clsCspSipServer;
     }
     m_clsMutex.release();
 
     return true;
 }
 
-/**
- * @ingroup CspServer
- * @brief CSipUserAgent 의 EventRegister 이벤트 정보를 저장한다.
- * @param pclsInfo	CSipUserAgent 의 EventRegister 이벤트 정보
- * @param iStatus		SIP 상태값
- * @returns 성공하면 true 를 리턴하고 실패하면 false 를 리턴한다.
- */
+// CSipUserAgent 의 EventRegister 이벤트 정보를 저장한다.
+// @param pclsInfo	CSipUserAgent 의 EventRegister 이벤트 정보
+// @param iStatus		SIP 상태값
+// @returns 성공하면 true 를 리턴하고 실패하면 false 를 리턴한다.
 bool CSipServerMap::Set( CSipServerInfo *pclsInfo, int iStatus ) {
     std::string strKey;
     bool bRes = false;
@@ -304,11 +270,8 @@ bool CSipServerMap::Set( CSipServerInfo *pclsInfo, int iStatus ) {
     return bRes;
 }
 
-/**
- * @ingroup CspServer
- * @brief 자료구조 모니터링을 위한 문자열을 가져온다.
- * @param strBuf 자료구조 모니터링을 위한 문자열 저장 변수
- */
+// 자료구조 모니터링을 위한 문자열을 가져온다.
+// @param strBuf 자료구조 모니터링을 위한 문자열 저장 변수
 void CSipServerMap::GetString( CMonitorString &strBuf ) {
     SIP_SERVER_MAP::iterator itMap;
 

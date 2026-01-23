@@ -51,7 +51,7 @@ CUserMap::~CUserMap() {
  * @param pclsXmlUser	XML 에 저장된 사용자 정보
  * @returns 성공하면 true 를 리턴하고 실패하면 false 를 리턴한다.
  */
-bool CUserMap::Insert( CSipMessage *pclsMessage, CSipFrom *pclsContact, CXmlUser *pclsXmlUser ) {
+bool CUserMap::Insert( CSipMessage *pclsMessage, CSipFrom *pclsContact, CspUser *pclsXmlUser ) {
     CUserInfo clsInfo;
     std::string strUserId;
     USER_MAP::iterator itMap;
@@ -69,7 +69,7 @@ bool CUserMap::Insert( CSipMessage *pclsMessage, CSipFrom *pclsContact, CXmlUser
     clsInfo.m_eTransport = pclsMessage->m_eTransport;
     time( &clsInfo.m_iLoginTime );
 
-    clsInfo.m_strGroupId = pclsXmlUser->m_strGroupId;
+    clsInfo.m_strGroupId = pclsXmlUser->m_strOrganizationId;
 
     m_clsMutex.acquire();
     itMap = m_clsMap.find( strUserId );

@@ -24,7 +24,7 @@
 #include "SipMessage.h"
 #include "SipMutex.h"
 #include "SipUserAgent.h"
-#include "XmlUser.h"
+#include "CspUser.h"
 
 typedef std::list<std::string> USER_ID_LIST;
 
@@ -73,7 +73,7 @@ public:
     CUserMap();
     ~CUserMap();
 
-    bool Insert( CSipMessage *pclsMessage, CSipFrom *pclsContact, CXmlUser *pclsXmlUser );
+    bool Insert( CSipMessage *pclsMessage, CSipFrom *pclsContact, CspUser *pclsXmlUser );
     bool Select( const char *pszUserId, CUserInfo &clsInfo );
     bool Select( const char *pszUserId );
     bool SelectGroup( const char *pszGroupId, USER_ID_LIST &clsList );

@@ -1,27 +1,11 @@
-/*
- * Copyright (C) 2012 Yee Young Han <websearch@naver.com> (http://blog.naver.com/websearch)
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- */
 
-/**
- * @ingroup CspServer
- * @brief SIP 메시지에 포함된 인증 정보가 유효한지 검사한다.
- * @param pclsMessage SIP 메시지
- * @returns SIP 메시지에 포함된 인증 정보가 유효하면 true 를 리턴하고 그렇지 않으면 false 를 리턴한다.
- */
+#ifndef _SIP_SERVER_USER_AGENT_HPP_
+#define _SIP_SERVER_USER_AGENT_HPP_
+
+#include "GroupMap.h"
+#include "CspUser.h"
+
+
 bool CSipServer::CheckAuthrization( CSipMessage *pclsMessage ) {
     SIP_CREDENTIAL_LIST::iterator itCL = pclsMessage->m_clsAuthorizationList.begin();
 
@@ -30,9 +14,9 @@ bool CSipServer::CheckAuthrization( CSipMessage *pclsMessage ) {
         return false;
     }
 
-    CXmlUser clsXmlUser;
+    CspUser clsUser;
 
-    ECheckAuthResult eRes = CheckAuthorization( &( *itCL ), pclsMessage->m_strSipMethod.c_str(), clsXmlUser );
+    ECheckAuthResult eRes = CheckAuthorization( &( *itCL ), pclsMessage->m_strSipMethod.c_str(), clsUser );
     switch ( eRes ) {
         case E_AUTH_NONCE_NOT_FOUND:
             SendUnAuthorizedResponse( pclsMessage );
@@ -44,7 +28,7 @@ bool CSipServer::CheckAuthrization( CSipMessage *pclsMessage ) {
             break;
     }
 
-    gclsUserMap.Insert( pclsMessage, NULL, &clsXmlUser );
+    gclsUserMap.Insert( pclsMessage, NULL, &clsUser );
 
     return true;
 }
@@ -76,7 +60,7 @@ bool CSipServer::EventIncomingRequestAuth( CSipMessage *pclsMessage ) {
         return false;
     }
 
-    printf( "[DEBUG] EventIncomingCall: Step 2 (SipServerMap)\n" );
+    CLog::Print( LOG_DEBUG, "EventIncomingCall: Step 2 (SipServerMap)" );
     // IP-PBX 에서 전송한 SIP 요청 메시지는 인증 허용으로 처리한다.
     if ( gclsSipServerMap.Select( strIp.c_str(), pclsMessage->m_clsTo.m_clsUri.m_strUser.c_str() ) ) {
         CLog::Print( LOG_DEBUG, "EventIncomingRequestAuth ip(%s) user(%s) IP-PBX => allowed", strIp.c_str(),
@@ -84,7 +68,11 @@ bool CSipServer::EventIncomingRequestAuth( CSipMessage *pclsMessage ) {
         return true;
     }
 
-    if ( gclsUserMap.Select( pclsMessage->m_clsFrom.m_clsUri.m_strUser.c_str(), clsUserInfo ) == false ) {
+
+    CspUser clsCspUser; 
+    bool bCspUserFound = gclsCspUserMap.Select( pclsMessage->m_clsFrom.m_clsUri.m_strUser.c_str(), clsCspUser );
+    
+    if ( gclsUserMap.Select( pclsMessage->m_clsFrom.m_clsUri.m_strUser.c_str(), clsUserInfo ) == false && !bCspUserFound ) {
         std::string strDestToId;
 
         // IP-PBX 에서 수신한 BYE 메시지를 정상적으로 처리하기 위한 기능
@@ -109,7 +97,8 @@ bool CSipServer::EventIncomingRequestAuth( CSipMessage *pclsMessage ) {
             return false;
         }
 
-        if ( gclsUserMap.Select( pclsMessage->m_clsFrom.m_clsUri.m_strUser.c_str(), clsUserInfo ) == false ) {
+        if ( gclsUserMap.Select( pclsMessage->m_clsFrom.m_clsUri.m_strUser.c_str(), clsUserInfo ) == false && 
+             !gclsCspUserMap.Select( pclsMessage->m_clsFrom.m_clsUri.m_strUser.c_str(), clsCspUser )) {
             CLog::Print( LOG_DEBUG,
                          "EventIncomingRequestAuth no UserInfo and CheckAuthrization() return true and no UserInfo" );
             return false;
@@ -141,8 +130,9 @@ bool CSipServer::EventIncomingRequestAuth( CSipMessage *pclsMessage ) {
  */
 void CSipServer::EventIncomingCall( const char *pszCallId, const char *pszFrom, const char *pszTo,
                                     CSipCallRtp *pclsRtp ) {
-    printf( "[DEBUG] EventIncomingCall: CallId=%s From=%s To=%s\n", pszCallId, pszFrom, pszTo );
-    CXmlUser clsXmlUser;
+    // Converted printf to CLog (matches line 139 roughly but keeping for trace)
+    CLog::Print( LOG_DEBUG, "EventIncomingCall: CallId=%s From=%s To=%s", pszCallId, pszFrom, pszTo );
+    CspUser clsUser;
     CUserInfo clsUserInfo;
     bool bRoutePrefix = false;
     std::string strTo;
@@ -154,8 +144,27 @@ void CSipServer::EventIncomingCall( const char *pszCallId, const char *pszFrom, 
         return StopCall( pszCallId, SIP_DECLINE );
     }
 
-    if ( SelectUser( pszTo, clsXmlUser ) == false ) {
+    //
+    if ( gclsCspUserMap.isAlive( pszTo, clsUser ) == false ) {
+        // Check if it is a Group Call
+        CspPttGroup clsGroup;
+        if ( gclsGroupMap.Select( pszTo, clsGroup ) ) {
+             CLog::Print( LOG_DEBUG, "EventIncomingCall to(%s) is Group(%s)", pszTo, clsGroup._name.c_str() );
+             CSipCallRoute clsRouteTemp; 
+             clsUserInfo.GetCallRoute( clsRouteTemp );
+             
+             if ( gclsGroupCallService.ProcessGroupCall( pszTo, pszFrom, pszCallId, pclsRtp, &clsRouteTemp ) ) {
+                 // RoutePrefix check logic below might be redundant or needed for other cases?
+                 // Original logic fell through. ProcessGroupCall returns true if handled?
+                 // If ProcessGroupCall initiates actions, we should return?
+                 // Checking ProcessGroupCall return type: bool.
+                 // Assuming true means handled.
+                 return;
+             }
+        }
+
         // [GROUP CALL HOOK]
+        /*
         CSipCallRoute clsRouteTemp; 
         // clsUserInfo is empty here so GetCallRoute might just result in defaults.
         clsUserInfo.GetCallRoute( clsRouteTemp );
@@ -164,51 +173,50 @@ void CSipServer::EventIncomingCall( const char *pszCallId, const char *pszFrom, 
         if ( gclsGroupCallService.ProcessGroupCall( pszTo, pszFrom, pszCallId, pclsRtp, &clsRouteTemp ) ) {
              return;
         }
+        */
 
-        printf( "[DEBUG] ## 1 EventIncomingCall: CallId=%s From=%s To=%s\n", pszCallId, pszFrom, pszTo );
+        CLog::Print( LOG_DEBUG, "## 1 EventIncomingCall: CallId=%s From=%s To=%s", pszCallId, pszFrom, pszTo );
 
-        CXmlSipServer clsXmlSipServer;
+        CspSipServer clsSipServer;
 
         // 로그인 대상 사용자가 아니면 연동할 IP-PBX 가 존재하는지 검사한다.
-        if ( gclsSipServerMap.SelectRoutePrefix( pszTo, clsXmlSipServer, strTo ) ) {
-            clsXmlUser.m_strId = clsXmlSipServer.m_strUserId;
-            clsXmlUser.m_strPassWord = clsXmlSipServer.m_strPassWord;
+        if ( gclsSipServerMap.SelectRoutePrefix( pszTo, clsSipServer, strTo ) ) {
+            clsUser.m_strId = clsSipServer.m_strUserId;
+            clsUser.m_strPassWord = clsSipServer.m_strPassWord;
 
-            clsUserInfo.m_strIp = clsXmlSipServer.m_strIp;
-            clsUserInfo.m_iPort = clsXmlSipServer.m_iPort;
+            clsUserInfo.m_strIp = clsSipServer.m_strIp;
+            clsUserInfo.m_iPort = clsSipServer.m_iPort;
             clsUserInfo.m_eTransport = E_SIP_UDP;
 
-            pszFrom = clsXmlUser.m_strId.c_str();
+            pszFrom = clsUser.m_strId.c_str();
             pszTo = strTo.c_str();
 
             bRoutePrefix = true;
             CLog::Print( LOG_DEBUG, "EventIncomingCall routePrefix IP-PBX(%s:%d)", clsUserInfo.m_strIp.c_str(),
                          clsUserInfo.m_iPort );
         } else if ( gclsSipServerMap.SelectIncomingRoute( NULL, pszTo, strTo ) ) {
-            if ( SelectUser( strTo.c_str(), clsXmlUser ) == false ) {
-                CLog::Print( LOG_DEBUG, "EventIncomingCall to(%s) is not found - dest to(%s)", pszTo, strTo.c_str() );
+            if ( gclsCspUserMap.isAlive( strTo, clsUser ) == false ) {
+                CLog::Print( LOG_DEBUG, "EventIncomingCall from(%s) to(%s) is not found - dest to(%s)", pszFrom, pszTo, strTo.c_str() );
                 return StopCall( pszCallId, SIP_NOT_FOUND );
             }
         } else if ( gclsSetup.IsCallPickupId( pszTo ) ) {
             return PickUp( pszCallId, pszFrom, pszTo, pclsRtp );
         } else {
-            CLog::Print( LOG_DEBUG, "EventIncomingCall to(%s) is not found in XML or DB", pszTo );
+            CLog::Print( LOG_DEBUG, "EventIncomingCall from(%s) to(%s) is not found in XML or DB", pszFrom, pszTo );
             return StopCall( pszCallId, SIP_NOT_FOUND );
         }
     }
-    printf( "[DEBUG] ## 2 EventIncomingCall: CallId=%s From=%s To=%s\n", pszCallId, pszFrom, pszTo );
+    //CLog::Print( LOG_DEBUG, "EventIncomingCall from(%s) to(%s)", pszFrom, pszTo );
 
-    if ( clsXmlUser.IsDnd() ) {
-        printf( "[DEBUG] ## 3 EventIncomingCall: CallId=%s From=%s To=%s\n", pszCallId, pszFrom, pszTo );
-        // 사용자가 DND 로 설정되어 있으면 통화 요청을 거절한다.
-        CLog::Print( LOG_DEBUG, "EventIncomingCall to(%s) is DND", pszTo );
+    if ( clsUser.isDnd() || clsUser.isReject(pszFrom) ) {
+        // 사용자가 DND 또는 거부 설정되어 있으면 통화 요청을 거절한다.
+        CLog::Print( LOG_DEBUG, "EventIncomingCall from(%s) to(%s) is DND or Reject", pszFrom, pszTo );
         return StopCall( pszCallId, SIP_DECLINE );
     }
 
-    if ( clsXmlUser.IsCallForward() ) {
-        printf( "[DEBUG] ## 4 EventIncomingCall: CallId=%s From=%s To=%s\n", pszCallId, pszFrom, pszTo );
-        CLog::Print( LOG_DEBUG, "EventIncomingCall to(%s) is CallForward(%s)", pszTo,
-                     clsXmlUser.m_strCallForward.c_str() );
+    if ( clsUser.isCallForward() ) {
+        CLog::Print( LOG_DEBUG, "EventIncomingCall from(%s) to(%s) is CallForward(%s)", pszFrom, pszTo,
+                     clsUser.m_strForward.c_str() );
 
         // 사용자가 착신전환 설정되어 있으면 착신전환 처리한다.
         CSipMessage *pclsInvite = gclsUserAgent.DeleteIncomingCall( pszCallId );
@@ -218,7 +226,7 @@ void CSipServer::EventIncomingCall( const char *pszCallId, const char *pszFrom, 
                 CSipFrom clsContact;
 
                 clsContact.m_clsUri.m_strProtocol = SIP_PROTOCOL;
-                clsContact.m_clsUri.m_strUser = clsXmlUser.m_strCallForward;
+                clsContact.m_clsUri.m_strUser = clsUser.m_strForward;
                 clsContact.m_clsUri.m_strHost = gclsSetup.m_strLocalIp;
                 clsContact.m_clsUri.m_iPort = gclsSetup.m_iUdpPort;
 
@@ -235,7 +243,7 @@ void CSipServer::EventIncomingCall( const char *pszCallId, const char *pszFrom, 
     }
 
     if ( bRoutePrefix == false ) {
-        printf( "[DEBUG] ## 5 EventIncomingCall: CallId=%s From=%s To=%s\n", pszCallId, pszFrom, pszTo );
+        CLog::Print( LOG_DEBUG, "## 5 EventIncomingCall: CallId=%s From=%s To=%s", pszCallId, pszFrom, pszTo );
         if ( gclsUserMap.Select( pszTo, clsUserInfo ) == false ) {
             CLog::Print( LOG_DEBUG, "EventIncomingCall(%s) to(%s) is not found", pszCallId, pszTo );
             return StopCall( pszCallId, SIP_NOT_FOUND );
@@ -254,7 +262,7 @@ void CSipServer::EventIncomingCall( const char *pszCallId, const char *pszFrom, 
 
         // [FIX] Update CMP with Caller Info (Peer A)
         // Replaced unsafe Select with thread-safe SetIpPort calls
-        printf("[DEBUG] EventIncomingCall: Update Caller Info (Peer A) for Port %d\n", iStartPort);
+        CLog::Print( LOG_DEBUG, "EventIncomingCall: Update Caller Info (Peer A) for Port %d", iStartPort );
              
         // Video (Index 2)
         if (pclsRtp->GetMediaCount() >= 2) {
@@ -287,7 +295,7 @@ void CSipServer::EventIncomingCall( const char *pszCallId, const char *pszFrom, 
 
     CSipMessage *pclsInvite;
 
-    printf( "[DEBUG] EventIncomingCall: Step 5 (CreateCall)\n" );
+    CLog::Print( LOG_DEBUG, "EventIncomingCall: Step 5 (CreateCall)" );
     if ( gclsUserAgent.CreateCall( pszFrom, pszTo, pclsRtp, &clsRoute, strCallId, &pclsInvite ) == false ) {
         CLog::Print( LOG_ERROR, "EventIncomingCall(%s) CreateCall errr", pszCallId );
         return StopCall( pszCallId, SIP_INTERNAL_SERVER_ERROR );
@@ -338,10 +346,11 @@ void CSipServer::EventCallRing( const char *pszCallId, int iSipStatus, CSipCallR
  * @param	pszCallId	SIP Call-ID
  * @param pclsRtp		RTP 정보 저장 객체
  */
+ 
 void CSipServer::EventCallStart( const char *pszCallId, CSipCallRtp *pclsRtp ) {
     CCallInfo clsCallInfo;
 
-    CLog::Print( LOG_DEBUG, "EventCallStart(%s)", pszCallId );
+    CLog::Print( LOG_DEBUG, "EventCallStart(%s), ", pszCallId );
 
     if ( gclsCallMap.Select( pszCallId, clsCallInfo ) ) {
         if ( pclsRtp && clsCallInfo.m_iPeerRtpPort > 0 ) {
@@ -383,12 +392,12 @@ void CSipServer::EventCallStart( const char *pszCallId, CSipCallRtp *pclsRtp ) {
             
             // [GROUP CALL FIX] Notify Service independent of RtpMap existence (Shared Session Support)
             int iRemoteAudio = pclsRtp->GetAudioPort();
-            printf("[DEBUG] EventCallStart: GetAudioPort=%d m_iPort=%d IP=%s\n", iRemoteAudio, pclsRtp->m_iPort, pclsRtp->m_strIp.c_str());
+            CLog::Print( LOG_DEBUG, "EventCallStart: GetAudioPort=%d m_iPort=%d IP=%s", iRemoteAudio, pclsRtp->m_iPort, pclsRtp->m_strIp.c_str() );
 
             if (iRemoteAudio <= 0 && pclsRtp->m_iPort > 0) iRemoteAudio = pclsRtp->m_iPort;
             
             if (iRemoteAudio > 0) {
-                printf("[DEBUG] EventCallStart: Calling OnCallStarted with %s:%d\n", pclsRtp->m_strIp.c_str(), iRemoteAudio);
+                CLog::Print( LOG_DEBUG, "EventCallStart: Calling OnCallStarted with %s:%d", pclsRtp->m_strIp.c_str(), iRemoteAudio );
                 gclsGroupCallService.OnCallStarted(pszCallId, pclsRtp->m_strIp, iRemoteAudio);
             }
             
@@ -656,3 +665,5 @@ bool CSipServer::EventMessage( const char *pszFrom, const char *pszTo, CSipMessa
 
     return gclsUserAgent.SendSms( pszFrom, pszTo, pclsMessage->m_strBody.c_str(), &clsRoute );
 }
+
+#endif

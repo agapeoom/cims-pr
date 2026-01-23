@@ -21,6 +21,7 @@ add_executable(csp ${SRCS})
 # Include directories (Propagated from targets but adding explicit just in case)
 target_include_directories(csp PUBLIC 
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
     ${CMAKE_CURRENT_SOURCE_DIR}/../ext/psip/SipPlatform
     ${CMAKE_CURRENT_SOURCE_DIR}/../ext/psip/SipStack
     ${CMAKE_CURRENT_SOURCE_DIR}/../ext/psip/SipParser
@@ -66,7 +67,7 @@ install(TARGETS csp DESTINATION bin)
 install(PROGRAMS csp.sh DESTINATION bin)
 
 # 2. Configuration (config/)
-install(FILES csp.xml DESTINATION config)
+install(FILES csp.xml csp.json DESTINATION config)
 install(DIRECTORY SipServerXml UserXml GroupXml DESTINATION config)
 install(DIRECTORY DESTINATION config/cdr)
 

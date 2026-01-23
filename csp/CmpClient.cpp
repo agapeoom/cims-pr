@@ -1,4 +1,5 @@
 #include "CmpClient.h"
+#include "SimpleJson.h"
 #include <chrono>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -74,14 +75,37 @@ bool CCmpClient::Init(const std::string& strCmpIp, int iCmpPort, int iLocalPort)
     return true;
 }
 
+// Helper to clean up transaction
+void CCmpClient::OnTransactionComplete(unsigned int transId, bool success, const std::string& response) {
+    if (transId == 0) return;
+    
+    std::shared_ptr<Transaction> pTrans = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(m_mutexTrans);
+        auto it = m_mapTransactions.find(transId);
+        if (it != m_mapTransactions.end()) {
+            pTrans = it->second;
+        }
+    }
+
+    if (pTrans) {
+        std::lock_guard<std::mutex> transLock(pTrans->mutex);
+        pTrans->strResponse = response;
+        pTrans->bSuccess = success;
+        pTrans->bCompleted = true;
+        pTrans->cv.notify_one();
+    }
+}
+
 // Protocol: TRANS_ID CSP_ID CSP_SESS_ID CMP_ID CMP_SESS_ID CMD PAYLOAD...
 // Example: 1001 CSP_MAIN sess_1 CMP_MAIN 0 add 1.2.3.4 1000 0 0
 // Response: 1001 CSP_MAIN sess_1 CMP_MAIN 0 OK ...
-bool CCmpClient::SendRequestAndWait(const std::string& strPayload, std::string& strResponse) {
+bool CCmpClient::SendRequestAndWait(const SimpleJson::JsonNode& payload, std::string& strResponse) {
     if (m_hSocket == -1) return false;
 
     unsigned int transId;
-    Transaction* pTrans = new Transaction();
+    // Use shared_ptr to prevent Use-After-Free if timeout occurs while RecvLoop is active
+    std::shared_ptr<Transaction> pTrans = std::make_shared<Transaction>();
     {
         std::lock_guard<std::mutex> lock(m_mutexTrans);
         transId = m_iNextTransId++;
@@ -89,9 +113,12 @@ bool CCmpClient::SendRequestAndWait(const std::string& strPayload, std::string& 
         m_mapTransactions[transId] = pTrans;
     }
 
-    // Construct Packet
-    // Header: TRANS_ID
-    std::string strPacket = std::to_string(transId) + " " + strPayload;
+    // Construct Packet (JSON wrapper)
+    SimpleJson::JsonNode packet;
+    packet.Set("trans_id", (int)transId);
+    packet.Set("payload", payload);
+
+    std::string strPacket = packet.ToString();
 
     struct sockaddr_in servaddr;
     memset(&servaddr, 0, sizeof(servaddr));
@@ -99,35 +126,261 @@ bool CCmpClient::SendRequestAndWait(const std::string& strPayload, std::string& 
     servaddr.sin_port = htons(m_iCmpPort);
     servaddr.sin_addr.s_addr = inet_addr(m_strCmpIp.c_str());
 
-    ssize_t n = sendto(m_hSocket, strPacket.c_str(), strPacket.length(), 0, (const struct sockaddr*)&servaddr, sizeof(servaddr));
-    if (n < 0) {
-        CLog::Print(LOG_ERROR, "CmpClient::SendRequest command sendto error");
-        std::lock_guard<std::mutex> lock(m_mutexTrans);
-        m_mapTransactions.erase(transId);
-        delete pTrans;
+    if (sendto(m_hSocket, strPacket.c_str(), strPacket.length(), 0, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0) {
+        CLog::Print(LOG_ERROR, "SendRequestAndWait sendto error");
+        // Remove from map
+        {
+            std::lock_guard<std::mutex> mapLock(m_mutexTrans);
+            m_mapTransactions.erase(transId);
+        }
         return false;
     }
-
-    // Wait
+    
     // Wait
     bool bResult = false;
+    // Scope for unique_lock
     {
         std::unique_lock<std::mutex> lock(pTrans->mutex);
-        if (pTrans->cv.wait_for(lock, std::chrono::seconds(3), [&]{ return pTrans->bCompleted; })) {
-            strResponse = pTrans->strResponse;
-            bResult = true;
-        } else {
-            CLog::Print(LOG_ERROR, "CmpClient::SendRequest timeout");
+        if (pTrans->cv.wait_for(lock, std::chrono::milliseconds(2000)) == std::cv_status::timeout) {
+            CLog::Print(LOG_ERROR, "SendRequestAndWait Timeout (TransId=%d)", transId);
             bResult = false;
+        } else {
+            strResponse = pTrans->strResponse;
+            bResult = pTrans->bSuccess;
         }
-    } // lock unlocked here (Crucial for Deadlock prevention and preventing SegFault on delete)
+    } 
 
+    // Safe Cleanup: Remove from map. 
+    // If RecvLoop holds a shared_ptr copy, the object won't be deleted yet.
     {
         std::lock_guard<std::mutex> mapLock(m_mutexTrans);
         m_mapTransactions.erase(transId);
     }
-    delete pTrans;
+    
     return bResult;
+}
+
+// Overload for legacy string if needed, or remove. 
+// Refactoring commands to call the new one.
+// The original SendRequestAndWait is removed as per instruction to modify it.
+// If a string-based SendRequestAndWait is still needed, it would be an overload.
+
+bool CCmpClient::AddSession(const std::string& strSessionId, std::string& strLocalIp, int& iLocalPort, int& iLocalVideoPort) {
+    SimpleJson::JsonNode req;
+    req.Set("cmd", "add");
+    req.Set("session_id", strSessionId);
+    req.Set("remote_ip", "0.0.0.0"); // Placeholder for add
+    req.Set("remote_port", 0);
+    req.Set("remote_video_port", 0);
+    req.Set("peer_index", 0);
+
+    // Header info (legacy args)
+    req.Set("csp_id", "CSP_MAIN"); 
+    req.Set("csp_sess_id", strSessionId);
+    req.Set("cmp_id", "CMP_MAIN");
+    req.Set("cmp_sess_id", "0");
+
+    std::string strResp;
+    
+    CLog::Print(LOG_DEBUG, "CmpClient::AddSession: %s", req.ToString().c_str());
+
+    if (!SendRequestAndWait(req, strResp)) return false;
+
+    // Response Body: CSP_MAIN <sessId> CMP_MAIN <cmpSess> OK <ip> <port> <vport>
+    // The response is now expected to be JSON.
+    SimpleJson::JsonNode respNode = SimpleJson::JsonNode::Parse(strResp);
+    if (respNode.type != SimpleJson::JSON_OBJECT) {
+        CLog::Print(LOG_ERROR, "CmpClient::AddSession: Failed to parse JSON response: %s", strResp.c_str());
+        return false;
+    }
+
+    if (respNode.Has("status") && respNode.Get("status").AsString() == "OK") {
+        strLocalIp = respNode.Get("local_ip").AsString();
+        iLocalPort = respNode.Get("local_port").AsInt();
+        iLocalVideoPort = respNode.Get("local_video_port").AsInt();
+        return true;
+    }
+    
+    return false;
+}
+
+bool CCmpClient::UpdateSession(const std::string& strSessionId, const std::string& strRmtIp, int iRmtPort, int iRmtVideoPort, int iPeerIdx, std::string& strLocalIp, int& iLocalPort) {
+    SimpleJson::JsonNode req;
+    req.Set("cmd", "add"); // "add" is used for update in the original protocol
+    req.Set("session_id", strSessionId);
+    req.Set("remote_ip", strRmtIp);
+    req.Set("remote_port", iRmtPort);
+    req.Set("remote_video_port", iRmtVideoPort);
+    req.Set("peer_index", iPeerIdx);
+
+    // Header info (legacy args)
+    req.Set("csp_id", "CSP_MAIN"); 
+    req.Set("csp_sess_id", strSessionId);
+    req.Set("cmp_id", "CMP_MAIN");
+    req.Set("cmp_sess_id", "0");
+
+    std::string strResp;
+    
+    CLog::Print(LOG_DEBUG, "CmpClient::UpdateSession: %s", req.ToString().c_str());
+
+    if (!SendRequestAndWait(req, strResp)) return false;
+    
+    SimpleJson::JsonNode respNode = SimpleJson::JsonNode::Parse(strResp);
+    if (respNode.type != SimpleJson::JSON_OBJECT) {
+        CLog::Print(LOG_ERROR, "CmpClient::UpdateSession: Failed to parse JSON response: %s", strResp.c_str());
+        return false;
+    }
+
+    if (respNode.Has("status") && respNode.Get("status").AsString() == "OK") {
+        strLocalIp = respNode.Get("local_ip").AsString();
+        iLocalPort = respNode.Get("local_port").AsInt();
+        // iLocalVideoPort is not returned by UpdateSession in the original code, but it's in AddSession.
+        // Assuming it's not needed here or would be part of the response if the protocol changed.
+        return true;
+    }
+    return false;
+}
+
+bool CCmpClient::RemoveSession(const std::string& strSessionId) {
+    SimpleJson::JsonNode req;
+    req.Set("cmd", "remove");
+    req.Set("session_id", strSessionId);
+
+    // Header info (legacy args)
+    req.Set("csp_id", "CSP_MAIN"); 
+    req.Set("csp_sess_id", strSessionId);
+    req.Set("cmp_id", "CMP_MAIN");
+    req.Set("cmp_sess_id", "0");
+
+    std::string strResp;
+    CLog::Print(LOG_DEBUG, "CmpClient::RemoveSession: %s", req.ToString().c_str());
+    return SendRequestAndWait(req, strResp);
+}
+
+bool CCmpClient::AddGroup(const std::string& strGroupId, const std::vector<std::shared_ptr<CspPttUser>>& vecMembers, std::string& strIp, int& iPort) {
+    // Format: addgroup <groupId> <count> <mem1:prio1> <mem2:prio2> ...
+    
+    SimpleJson::JsonNode req;
+    req.Set("cmd", "addgroup");
+    req.Set("group_id", strGroupId);
+    req.Set("count", (int)vecMembers.size());
+    
+    std::stringstream ssMembers;
+    for(size_t i=0; i<vecMembers.size(); ++i) {
+        if (!vecMembers[i]) continue;
+        if(i>0) ssMembers << ",";
+        ssMembers << vecMembers[i]->_id << ":" << vecMembers[i]->_priority;
+    }
+    req.Set("members", ssMembers.str());
+
+    // Header info (legacy args)
+    req.Set("csp_id", "CSP_MAIN"); 
+    req.Set("csp_sess_id", "0");
+    req.Set("cmp_id", "CMP_MAIN");
+    req.Set("cmp_sess_id", "0");
+
+    std::string strResp;
+    
+    if (SendRequestAndWait(req, strResp)) {
+        SimpleJson::JsonNode respNode = SimpleJson::JsonNode::Parse(strResp);
+        if (respNode.type != SimpleJson::JSON_OBJECT) {
+            CLog::Print(LOG_ERROR, "CmpClient::AddGroup: Failed to parse JSON response: %s", strResp.c_str());
+            return false;
+        }
+
+        if (respNode.Has("status") && respNode.Get("status").AsString() == "OK") {
+            strIp = respNode.Get("ip").AsString(); 
+            iPort = respNode.Get("port").AsInt();
+            CLog::Print(LOG_INFO, "CmpClient::AddGroup Success: %s:%d Members: %d", strIp.c_str(), iPort, (int)vecMembers.size());
+            return true;
+        }
+        CLog::Print(LOG_ERROR, "CmpClient::AddGroup Fail: Status not OK. Resp: %s", strResp.c_str());
+    } else {
+         CLog::Print(LOG_ERROR, "CmpClient::AddGroup SendRequest Failed");
+    }
+    return false;
+}
+
+bool CCmpClient::ModifyGroup(const std::string& strGroupId, const std::vector<std::shared_ptr<CspPttUser>>& vecMembers) {
+    SimpleJson::JsonNode req;
+    req.Set("cmd", "modifygroup");
+    req.Set("group_id", strGroupId);
+    
+    std::stringstream ssMembers;
+    for(size_t i=0; i<vecMembers.size(); ++i) {
+        if (!vecMembers[i]) continue;
+        if(i>0) ssMembers << ",";
+        ssMembers << vecMembers[i]->_id << ":" << vecMembers[i]->_priority;
+    }
+    req.Set("members", ssMembers.str());
+
+    // Header info (legacy args)
+    req.Set("csp_id", "CSP_MAIN"); 
+    req.Set("csp_sess_id", "0");
+    req.Set("cmp_id", "CMP_MAIN");
+    req.Set("cmp_sess_id", "0");
+    
+    std::string strResp;
+    return SendRequestAndWait(req, strResp);
+}
+
+bool CCmpClient::JoinGroup(const std::string& strGroupId, const std::string& strSessionId, const std::string& strUserIp, int iUserPort) {
+    SimpleJson::JsonNode req;
+    req.Set("cmd", "joingroup");
+    req.Set("group_id", strGroupId);
+    req.Set("session_id", strSessionId);
+    req.Set("user_ip", strUserIp);
+    req.Set("user_port", iUserPort);
+    
+    req.Set("csp_id", "CSP_MAIN");
+    req.Set("csp_sess_id", strSessionId); 
+    req.Set("cmp_id", "CMP_MAIN");
+    req.Set("cmp_sess_id", "0");
+
+    std::string resp;
+    return SendRequestAndWait(req, resp);
+}
+
+bool CCmpClient::LeaveGroup(const std::string& strGroupId, const std::string& strSessionId) {
+    SimpleJson::JsonNode req;
+    req.Set("cmd", "leavegroup");
+    req.Set("group_id", strGroupId);
+    req.Set("session_id", strSessionId);
+
+    req.Set("csp_id", "CSP_MAIN");
+    req.Set("csp_sess_id", strSessionId); 
+    req.Set("cmp_id", "CMP_MAIN");
+    req.Set("cmp_sess_id", "0");
+
+    std::string resp;
+    return SendRequestAndWait(req, resp);
+}
+
+bool CCmpClient::RemoveGroup(const std::string& strGroupId) {
+    SimpleJson::JsonNode req;
+    req.Set("cmd", "removegroup");
+    req.Set("group_id", strGroupId);
+
+    // Header info (legacy args)
+    req.Set("csp_id", "CSP_MAIN"); 
+    req.Set("csp_sess_id", "0");
+    req.Set("cmp_id", "CMP_MAIN");
+    req.Set("cmp_sess_id", "0");
+
+    std::string strResp;
+    return SendRequestAndWait(req, strResp);
+}
+
+bool CCmpClient::Alive() {
+    SimpleJson::JsonNode req;
+    req.Set("cmd", "alive");
+    req.Set("csp_id", "CSP_MAIN"); 
+    req.Set("csp_sess_id", "0");
+    req.Set("cmp_id", "CMP_MAIN");
+    req.Set("cmp_sess_id", "0");
+    
+    std::string resp;
+    return SendRequestAndWait(req, resp);
 }
 
 void CCmpClient::RecvLoop() {
@@ -141,174 +394,35 @@ void CCmpClient::RecvLoop() {
         if (n > 0) {
             buffer[n] = '\0';
             std::string strPacket = buffer;
-            std::string strIp = inet_ntoa(cliaddr.sin_addr);
-            int iPort = ntohs(cliaddr.sin_port);
-            OnPacketReceived(strPacket, strIp, iPort);
+            // printf("RX: %s\n", strPacket.c_str());
+
+            // New JSON Parsing
+             SimpleJson::JsonNode root = SimpleJson::JsonNode::Parse(strPacket);
+             if (root.type == SimpleJson::JSON_OBJECT) {
+                 int transId = (int)root.GetInt("trans_id", 0);
+                 std::string respBody;
+                 if (root.Has("response")) {
+                      SimpleJson::JsonNode r = root.Get("response");
+                      if (r.type == SimpleJson::JSON_STRING) respBody = r.strValue; 
+                      else respBody = r.ToString(); 
+                 }
+                 
+                 // Notify Transaction matches
+                 OnTransactionComplete(transId, true, respBody);
+             } else {
+                  CLog::Print(LOG_INFO, "CmpClient Non-JSON RX: %s", strPacket.c_str());
+             }
         }
     }
 }
 
-void CCmpClient::OnPacketReceived(const std::string& strPacket, const std::string& strIp, int iPort) {
-    // Parse TRANS_ID logic
-    std::stringstream ss(strPacket);
-    unsigned int transId;
-    if (!(ss >> transId)) {
-        CLog::Print(LOG_ERROR, "CmpClient::OnPacketReceived Invalid Packet: %s", strPacket.c_str());
-        return;
-    }
-    
-    // Remaining is Body
-    // Reconstruct body strictly? Or just take what's left?
-    // getline gets rest of line but leading space issue.
-    // Let's assume response starts after TransID space.
-    size_t pos = strPacket.find(' ');
-    std::string strBody = (pos != std::string::npos) ? strPacket.substr(pos + 1) : "";
-
-    std::lock_guard<std::mutex> lock(m_mutexTrans);
-    auto it = m_mapTransactions.find(transId);
-    if (it != m_mapTransactions.end()) {
-        Transaction* pTrans = it->second;
-        std::lock_guard<std::mutex> transLock(pTrans->mutex);
-        pTrans->strResponse = strBody;
-        pTrans->bCompleted = true;
-        pTrans->cv.notify_one();
-    } else {
-        // Async Notification or unknown TransID
-        // Just log for now as we don't handle async callbacks yet
-        printf("CmpClient Async RX: %s\n", strPacket.c_str());
-    }
-}
-
-// FORMAT: CSP_ID CSP_SESS_ID CMP_ID CMP_SESS_ID CMD ...
-// Using defaults: CSP_MAIN, <sessId>, CMP_MAIN, 0
-
-bool CCmpClient::AddSession(const std::string& strSessionId, std::string& strLocalIp, int& iLocalPort, int& iLocalVideoPort) {
-    // OLD: add <id> ...
-    // NEW: CSP_MAIN <sessId> CMP_MAIN 0 add ... (TransID added by SendRequest)
-    
-    std::string strPayload = "CSP_MAIN " + strSessionId + " CMP_MAIN 0 add " + strSessionId + " 0.0.0.0 0 0 0";
-    std::string strResp;
-    
-    printf("CmpClient::AddSession: %s\n", strPayload.c_str()); // Debug
-
-    if (!SendRequestAndWait(strPayload, strResp)) return false;
-
-    // Response Body: CSP_MAIN <sessId> CMP_MAIN <cmpSess> OK <ip> <port> <vport>
-    // Need to parse header first?
-    // The response body handled by OnPacketReceived is everything after TransId.
-    // So strResp = "CSP_MAIN sess_1 CMP_MAIN 0 OK locIp locPort locVPort"
-    
-    std::stringstream ss(strResp);
-    std::string cspId, cspSess, cmpId, cmpSess, status;
-    ss >> cspId >> cspSess >> cmpId >> cmpSess >> status;
-    
-    if (status != "OK") return false;
-    
-    ss >> strLocalIp >> iLocalPort >> iLocalVideoPort;
-    return true;
-}
-
-bool CCmpClient::UpdateSession(const std::string& strSessionId, const std::string& strRmtIp, int iRmtPort, int iRmtVideoPort, int iPeerIdx, std::string& strLocalIp, int& iLocalPort) {
-    std::string strPayload = "CSP_MAIN " + strSessionId + " CMP_MAIN 0 add " + strSessionId + " " + strRmtIp + " " + std::to_string(iRmtPort) + " " + std::to_string(iRmtVideoPort) + " " + std::to_string(iPeerIdx);
-    std::string strResp;
-    
-    printf("CmpClient::UpdateSession: %s\n", strPayload.c_str());
-
-    if (!SendRequestAndWait(strPayload, strResp)) return false;
-    
-    // Parse
-    std::stringstream ss(strResp);
-    std::string cspId, cspSess, cmpId, cmpSess, status;
-    ss >> cspId >> cspSess >> cmpId >> cmpSess >> status;
-    
-    if (status != "OK") return false;
-    // Assuming same return format
-    int iLocalVideoPort;
-    ss >> strLocalIp >> iLocalPort >> iLocalVideoPort;
-    return true;
-}
-
-bool CCmpClient::RemoveSession(const std::string& strSessionId) {
-    std::string strPayload = "CSP_MAIN " + strSessionId + " CMP_MAIN 0 remove " + strSessionId;
-    std::string strResp;
-    printf("CmpClient::RemoveSession: %s\n", strPayload.c_str());
-    return SendRequestAndWait(strPayload, strResp);
-}
-
-bool CCmpClient::AddGroup(const std::string& strGroupId, const std::vector<CXmlGroup::CGroupMember>& vecMembers, std::string& strIp, int& iPort) {
-    // Send 7 tokens header + GroupID + Members
-    // Format: addgroup 0 <groupId> <count> <mem1:prio1> <mem2:prio2> ...
-    
-    std::string strPayload = "CSP_MAIN 0 CMP_MAIN 0 addgroup " + strGroupId + " " + std::to_string(vecMembers.size());
-    for (const auto& mem : vecMembers) {
-        strPayload += " " + mem.m_strId + ":" + std::to_string(mem.m_iPriority);
-    }
-    
-    std::string strResp;
-    
-    if (SendRequestAndWait(strPayload, strResp)) {
-        // Parse: Scan for "OK"
-        std::stringstream ss(strResp);
-        std::string token;
-        std::vector<std::string> tokens;
-        while (std::getline(ss, token, ' ')) {
-            if (!token.empty()) {
-                tokens.push_back(token);
-            }
-        }
-
-        for (size_t i = 0; i < tokens.size(); ++i) {
-            if (tokens[i] == "OK") {
-                if (i + 2 < tokens.size()) {
-                    strIp = tokens[i+1];
-                    iPort = std::stoi(tokens[i+2]);
-                    CLog::Print(LOG_INFO, "CmpClient::AddGroup Success: %s:%d Members: %d", strIp.c_str(), iPort, (int)vecMembers.size());
-                    return true;
-                }
-            }
-        }
-        CLog::Print(LOG_ERROR, "CmpClient::AddGroup Parse Fail: OK not found or args missing. Resp: %s", strResp.c_str());
-    } else {
-         CLog::Print(LOG_ERROR, "CmpClient::AddGroup SendRequest Failed");
-    }
-    return false;
-}
-
-bool CCmpClient::ModifyGroup(const std::string& strGroupId, const std::vector<CXmlGroup::CGroupMember>& vecMembers) {
-    // Format: modifygroup 0 <groupId> <count> <mem1:prio1> <mem2:prio2> ...
-    std::string strPayload = "CSP_MAIN 0 CMP_MAIN 0 modifygroup 0 " + strGroupId + " " + std::to_string(vecMembers.size());
-    for (const auto& mem : vecMembers) {
-        strPayload += " " + mem.m_strId + ":" + std::to_string(mem.m_iPriority);
-    }
-    
-    std::string strResp;
-    return SendRequestAndWait(strPayload, strResp);
-}
-
-bool CCmpClient::JoinGroup(const std::string& strGroupId, const std::string& strSessionId, const std::string& strIp, int iPort) {
-    std::string strPayload = "CSP_MAIN " + strSessionId + " CMP_MAIN 0 joingroup " + strGroupId + " " + strSessionId + " " + strIp + " " + std::to_string(iPort);
-    std::string strResp;
-    return SendRequestAndWait(strPayload, strResp);
-}
-
-bool CCmpClient::LeaveGroup(const std::string& strGroupId, const std::string& strSessionId) {
-    std::string strPayload = "CSP_MAIN " + strSessionId + " CMP_MAIN 0 leavegroup " + strGroupId + " " + strSessionId;
-    std::string strResp;
-    return SendRequestAndWait(strPayload, strResp);
-}
-
-bool CCmpClient::RemoveGroup(const std::string& strGroupId) {
-    std::string strPayload = "CSP_MAIN 0 CMP_MAIN 0 removegroup " + strGroupId;
-    std::string strResp;
-    return SendRequestAndWait(strPayload, strResp);
-}
+// OnPacketReceived is deprecated/unused with new RecvLoop logic.
 
 void CCmpClient::KeepAliveLoop() {
     while (m_bKeepAliveRunning) {
-        std::string strResp;
-        bool bSuccess = SendRequestAndWait("CSP_MAIN 0 CMP_MAIN 0 ALIVE", strResp);
+        // Use JSON Alive()
+        bool bSuccess = Alive();
         
-        // Simple success check. Could parse response for "OK" if needed.
         if (bSuccess) {
             if (!m_bConnected) {
                 m_bConnected = true;

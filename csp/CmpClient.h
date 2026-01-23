@@ -9,7 +9,8 @@
 #include <condition_variable>
 #include <functional>
 #include "SipStackDefine.h"
-#include "XmlGroup.h"
+#include "CspPttGroup.h"
+#include "SimpleJson.h"
 
 struct CmpSocket {
     int iSocket;
@@ -26,10 +27,11 @@ public:
     bool AddSession(const std::string& strSessionId, std::string& strLocalIp, int& iLocalPort, int& iLocalVideoPort);
     bool UpdateSession(const std::string& strSessionId, const std::string& strRmtIp, int iRmtPort, int iRmtVideoPort, int iPeerIdx, std::string& strLocalIp, int& iLocalPort);
     bool RemoveSession(const std::string& strSessionId);
+    bool Alive();
 
 
-    bool AddGroup(const std::string& strGroupId, const std::vector<CXmlGroup::CGroupMember>& vecMembers, std::string& strIp, int& iPort);
-    bool ModifyGroup(const std::string& strGroupId, const std::vector<CXmlGroup::CGroupMember>& vecMembers);
+    bool AddGroup(const std::string& strGroupId, const std::vector<std::shared_ptr<CspPttUser>>& vecMembers, std::string& strIp, int& iPort);
+    bool ModifyGroup(const std::string& strGroupId, const std::vector<std::shared_ptr<CspPttUser>>& vecMembers);
     bool JoinGroup(const std::string& strGroupId, const std::string& strSessionId, const std::string& strIp, int iPort);
     bool LeaveGroup(const std::string& strGroupId, const std::string& strSessionId);
     bool RemoveGroup(const std::string& strGroupId);
@@ -45,15 +47,17 @@ private:
         std::condition_variable cv;
         std::mutex mutex;
         bool bCompleted;
-        Transaction() : id(0), bCompleted(false) {}
+        bool bSuccess;
+        Transaction() : id(0), bCompleted(false), bSuccess(false) {}
     };
 
-    bool SendRequestAndWait(const std::string& strPayload, std::string& strResponse);
+    bool SendRequestAndWait(const SimpleJson::JsonNode& payload, std::string& strResponse);
 
     // Threads
     void KeepAliveLoop();
     void RecvLoop();
-    void OnPacketReceived(const std::string& strPacket, const std::string& strIp, int iPort);
+    void OnTransactionComplete(unsigned int transId, bool success, const std::string& response);
+    // void OnPacketReceived(const std::string& strPacket, const std::string& strIp, int iPort); // Deprecated
 
     std::string m_strCmpIp;
     int m_iCmpPort;
@@ -64,7 +68,7 @@ private:
 
     // Transaction Map
     std::mutex m_mutexTrans;
-    std::map<unsigned int, Transaction*> m_mapTransactions;
+    std::map<unsigned int, std::shared_ptr<Transaction>> m_mapTransactions;
     unsigned int m_iNextTransId;
 
     // Threads

@@ -31,6 +31,9 @@
 #include "Log.h"
 #include "MemoryDebug.h"
 #include "SipStackDefine.h"
+#include "SimpleJson.h"
+#include <fstream>
+#include <sstream>
 
 CSipServerSetup gclsSetup;
 
@@ -81,6 +84,7 @@ CSipServerSetup::CSipServerSetup()
       m_bUseRtpRelay( false ),
       m_iSendOptionsPeriod( 0 ),
       m_bUseRegisterSession( false ),
+      m_iUserTimeout( 3600 ),
       m_iLogLevel( 0 ),
       m_iLogMaxSize( 20000000 ),
       m_iMonitorPort( 6000 ),
@@ -104,93 +108,156 @@ CSipServerSetup::~CSipServerSetup() {
  * @returns 성공하면 true 를 리턴하고 실패하면 false 를 리턴한다.
  */
 bool CSipServerSetup::Read( const char *pszFileName ) {
-    CXmlElement clsXml, *pclsElement;
+    std::string strFileName = pszFileName;
+    if (strFileName.substr(strFileName.find_last_of(".") + 1) == "json") {
+        std::ifstream t(pszFileName);
+        if (!t.is_open()) return false;
+        std::stringstream buffer;
+        buffer << t.rdbuf();
+        
+        SimpleJson::JsonNode root = SimpleJson::JsonNode::Parse(buffer.str());
+        if (root.type != SimpleJson::JSON_OBJECT) return false;
 
-    if ( clsXml.ParseFile( pszFileName ) == false ) return false;
+        if (root.Has("Setup")) {
+            SimpleJson::JsonNode setup = root.Get("Setup");
+            
+            if (setup.Has("Sip")) {
+                SimpleJson::JsonNode sip = setup.Get("Sip");
+                if (sip.Has("LocalIp")) m_strLocalIp = sip.GetString("LocalIp");
+                if (sip.Has("UdpPort")) m_iUdpPort = (int)sip.GetInt("UdpPort");
+                if (sip.Has("UdpThreadCount")) m_iUdpThreadCount = (int)sip.GetInt("UdpThreadCount");
+                if (sip.Has("Realm")) m_strRealm = sip.GetString("Realm");
+                if (sip.Has("TcpPort")) m_iTcpPort = (int)sip.GetInt("TcpPort");
+                if (sip.Has("TcpThreadCount")) m_iTcpThreadCount = (int)sip.GetInt("TcpThreadCount");
+                if (sip.Has("TcpRecvTimeout")) m_iTcpRecvTimeout = (int)sip.GetInt("TcpRecvTimeout");
+                if (sip.Has("TlsPort")) m_iTlsPort = (int)sip.GetInt("TlsPort");
+                if (sip.Has("CertFile")) m_strCertFile = sip.GetString("CertFile");
+                if (sip.Has("MinRegisterTimeout")) m_iMinRegisterTimeout = (int)sip.GetInt("MinRegisterTimeout");
+                if (sip.Has("CallPickupId")) m_strCallPickupId = sip.GetString("CallPickupId");
+                if (sip.Has("StackExecutePeriod")) m_iStackExecutePeriod = (int)sip.GetInt("StackExecutePeriod");
+                if (sip.Has("UserTimeout")) m_iUserTimeout = (int)sip.GetInt("UserTimeout");
+            }
 
-    // SIP 설정
-    pclsElement = clsXml.SelectElement( "Sip" );
-    if ( pclsElement == NULL ) return false;
+            if (setup.Has("RtpRelay")) {
+                SimpleJson::JsonNode rtp = setup.Get("RtpRelay");
+                if (rtp.Has("UseRtpRelay")) m_bUseRtpRelay = (rtp.Get("UseRtpRelay").AsString() == "true"); 
+                if (rtp.Has("CmpIp")) m_strCmpIp = rtp.GetString("CmpIp");
+                if (rtp.Has("CmpPort")) m_iCmpPort = (int)rtp.GetInt("CmpPort");
+                if (rtp.Has("LocalCmpPort")) m_iLocalCmpPort = (int)rtp.GetInt("LocalCmpPort");
+            }
 
-    pclsElement->SelectElementData( "LocalIp", m_strLocalIp );
-    pclsElement->SelectElementData( "UdpPort", m_iUdpPort );
-    pclsElement->SelectElementData( "UdpThreadCount", m_iUdpThreadCount );
-    pclsElement->SelectElementData( "Realm", m_strRealm );
-    pclsElement->SelectElementData( "SendOptionsPeriod", m_iSendOptionsPeriod );
-    pclsElement->SelectElementData( "TcpPort", m_iTcpPort );
-    pclsElement->SelectElementData( "TcpThreadCount", m_iTcpThreadCount );
-    pclsElement->SelectElementData( "TcpCallBackThreadCount", m_iTcpCallBackThreadCount );
-    pclsElement->SelectElementData( "TcpRecvTimeout", m_iTcpRecvTimeout );
-    pclsElement->SelectElementData( "TlsPort", m_iTlsPort );
-    pclsElement->SelectElementData( "TlsAcceptTimeout", m_iTlsAcceptTimeout );
-    pclsElement->SelectElementData( "CertFile", m_strCertFile );
-    pclsElement->SelectElementData( "CaCertFile", m_strCaCertFile );
-    pclsElement->SelectElementData( "MinRegisterTimeout", m_iMinRegisterTimeout );
-    pclsElement->SelectElementData( "CallPickupId", m_strCallPickupId );
-    pclsElement->SelectElementData( "StackExecutePeriod", m_iStackExecutePeriod );
-    pclsElement->SelectElementData( "TimerD", m_iTimerD );
-    pclsElement->SelectElementData( "TimerJ", m_iTimerJ );
-    pclsElement->SelectElementData( "Ipv6", m_bIpv6 );
-    pclsElement->SelectElementData( "UseRegisterSession", m_bUseRegisterSession );
+             if (setup.Has("Log")) {
+                SimpleJson::JsonNode log = setup.Get("Log");
+                if (log.Has("Folder")) m_strLogFolder = log.GetString("Folder");
+                if (log.Has("MaxSize")) m_iLogMaxSize = (int)log.GetInt("MaxSize");
+                if (log.Has("Level")) {
+                    SimpleJson::JsonNode level = log.Get("Level");
+                    m_iLogLevel = 0;
+                    if (level.Has("Debug") && level.Get("Debug").AsString() == "true") m_iLogLevel |= LOG_DEBUG;
+                    if (level.Has("Info") && level.Get("Info").AsString() == "true") m_iLogLevel |= LOG_INFO;
+                    if (level.Has("Network") && level.Get("Network").AsString() == "true") m_iLogLevel |= LOG_NETWORK;
+                }
+                CLog::SetLevel(m_iLogLevel);
+                CLog::SetMaxLogSize(m_iLogMaxSize);
+            }
 
-    // 로그
-    pclsElement = clsXml.SelectElement( "Log" );
-    if ( pclsElement == NULL ) return false;
+            if (setup.Has("DataFolder")) {
+                SimpleJson::JsonNode dataDir = setup.Get("DataFolder");
+                if (dataDir.Has("User")) m_strUserDataFolder = dataDir.GetString("User");
+                if (dataDir.Has("SipServer")) m_strSipServerDataFolder = dataDir.GetString("SipServer");
+                if (dataDir.Has("Group")) m_strGroupDataFolder = dataDir.GetString("Group");
+            }
+            
+            if (setup.Has("Cdr")) {
+                SimpleJson::JsonNode cdr = setup.Get("Cdr");
+                if (cdr.Has("Folder")) m_strCdrFolder = cdr.GetString("Folder");
+            }
 
-    pclsElement->SelectElementData( "Folder", m_strLogFolder );
-
-    // XML 폴더
-    pclsElement = clsXml.SelectElement( "XmlFolder" );
-    if ( pclsElement ) {
-        pclsElement->SelectElementData( "User", m_strUserXmlFolder );
-        pclsElement->SelectElementData( "SipServer", m_strSipServerXmlFolder );
-        pclsElement->SelectElementData( "Group", m_strGroupXmlFolder );
-    }
-
-    // CDR
-    pclsElement = clsXml.SelectElement( "Cdr" );
-    if ( pclsElement ) {
-        pclsElement->SelectElementData( "Folder", m_strCdrFolder );
-    }
-
-    // 모니터링
-    pclsElement = clsXml.SelectElement( "Monitor" );
-    if ( pclsElement ) {
-        pclsElement->SelectElementData( "Port", m_iMonitorPort );
-    }
-
-    Read( clsXml );
-
-    m_strFileName = pszFileName;
-    SetFileSizeTime();
-
-    if (m_strLocalIp == "0.0.0.0") {
-        // Auto-detect IP
-        int fd = socket(AF_INET, SOCK_DGRAM, 0);
-        if (fd >= 0) {
-            struct ifconf ifc;
-            char buf[1024];
-            ifc.ifc_len = sizeof(buf);
-            ifc.ifc_buf = buf;
-            if (ioctl(fd, SIOCGIFCONF, &ifc) == 0) {
-                struct ifreq* it = ifc.ifc_req;
-                const struct ifreq* const end = it + (ifc.ifc_len / sizeof(struct ifreq));
-                for (; it != end; ++it) {
-                    struct sockaddr_in* addr = (struct sockaddr_in*)&it->ifr_addr;
-                    if (addr->sin_family == AF_INET) {
-                        std::string ip = inet_ntoa(addr->sin_addr);
-                        if (ip != "127.0.0.1" && ip != "0.0.0.0") {
-                            m_strLocalIp = ip;
-                            break;
-                        }
+            // Monitor
+            m_clsMonitorIpMap.DeleteAll();
+            if (setup.Has("Monitor")) {
+                SimpleJson::JsonNode mon = setup.Get("Monitor");
+                if (mon.Has("Port")) m_iMonitorPort = (int)mon.GetInt("Port");
+                if (mon.Has("ClientIpList")) {
+                    SimpleJson::JsonNode list = mon.Get("ClientIpList");
+                    if (list.type == SimpleJson::JSON_ARRAY) {
+                         for(size_t i=0; i<list.Size(); ++i) {
+                              m_clsMonitorIpMap.Insert(list.At(i).AsString().c_str(), "");
+                         }
                     }
                 }
             }
-            close(fd);
-        }
-        CLog::Print(LOG_INFO, "Auto-detected LocalIp: %s", m_strLocalIp.c_str());
-    }
 
+            // Security
+            m_clsDenySipUserAgentMap.DeleteAll();
+            m_clsAllowSipUserAgentMap.DeleteAll();
+            m_clsAllowClientIpMap.DeleteAll();
+
+            if (setup.Has("Security")) {
+                SimpleJson::JsonNode sec = setup.Get("Security");
+                
+                if (sec.Has("DenySipUserAgentList")) {
+                     SimpleJson::JsonNode list = sec.Get("DenySipUserAgentList");
+                     if (list.type == SimpleJson::JSON_ARRAY) {
+                         for(size_t i=0; i<list.Size(); ++i) {
+                              m_clsDenySipUserAgentMap.Insert(list.At(i).AsString().c_str(), "");
+                         }
+                     }
+                }
+                
+                if (sec.Has("AllowSipUserAgentList")) {
+                     SimpleJson::JsonNode list = sec.Get("AllowSipUserAgentList");
+                     if (list.type == SimpleJson::JSON_ARRAY) {
+                         for(size_t i=0; i<list.Size(); ++i) {
+                              m_clsAllowSipUserAgentMap.Insert(list.At(i).AsString().c_str(), "");
+                         }
+                     }
+                }
+
+                if (sec.Has("AllowClientIpList")) {
+                     SimpleJson::JsonNode list = sec.Get("AllowClientIpList");
+                     if (list.type == SimpleJson::JSON_ARRAY) {
+                         for(size_t i=0; i<list.Size(); ++i) {
+                              m_clsAllowClientIpMap.Insert(list.At(i).AsString().c_str(), "");
+                         }
+                     }
+                }
+            }
+            
+        }
+        
+        m_strFileName = pszFileName;
+        SetFileSizeTime();
+        
+        // Auto-detect IP logic same as below... duplicating for now or refactor.
+        if (m_strLocalIp == "0.0.0.0") {
+             int fd = socket(AF_INET, SOCK_DGRAM, 0);
+             if (fd >= 0) {
+                 struct ifconf ifc;
+                 char buf[1024];
+                 ifc.ifc_len = sizeof(buf);
+                 ifc.ifc_buf = buf;
+                 if (ioctl(fd, SIOCGIFCONF, &ifc) == 0) {
+                     struct ifreq* it = ifc.ifc_req;
+                     const struct ifreq* const end = it + (ifc.ifc_len / sizeof(struct ifreq));
+                     for (; it != end; ++it) {
+                         struct sockaddr_in* addr = (struct sockaddr_in*)&it->ifr_addr;
+                         if (addr->sin_family == AF_INET) {
+                             std::string ip = inet_ntoa(addr->sin_addr);
+                             if (ip != "127.0.0.1" && ip != "0.0.0.0") {
+                                 m_strLocalIp = ip;
+                                 break;
+                             }
+                         }
+                     }
+                 }
+                 close(fd);
+             }
+             CLog::Print(LOG_INFO, "Auto-detected LocalIp: %s", m_strLocalIp.c_str());
+        }
+
+        return true;
+    }
     return true;
 }
 

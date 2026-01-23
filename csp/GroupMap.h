@@ -5,11 +5,11 @@
 #ifndef _GROUP_MAP_H_
 #define _GROUP_MAP_H_
 
-#include "XmlGroup.h"
+#include "CspPttGroup.h"
 #include <map>
 #include <functional>
 
-typedef std::map<std::string, CXmlGroup> GROUP_MAP;
+typedef std::map<std::string, CspPttGroup> GROUP_MAP;
 
 /**
  * @ingroup CspServer
@@ -24,18 +24,21 @@ public:
     bool Load( const char *pszDirName );
 
     /** Insert a group */
-    void Insert( CXmlGroup &clsGroup );
+    void Insert( CspPttGroup &clsGroup );
 
     /** Select a group by ID */
-    bool Select( const char *pszGroupId, CXmlGroup &clsGroup );
+    bool Select( const char *pszGroupId, CspPttGroup &clsGroup );
+
+    // find group list by user-ID
+    void IterateInternal( std::function<void(const CspPttGroup&)> fnCallback );
+
+    bool FindGroupsByUser(std::string strUserId);
 
     /** Clear all groups */
     void Clear();
 
-    void IterateInternal( std::function<void(const CXmlGroup&)> fnCallback );
-
 private:
-    GROUP_MAP m_clsMap;
+    std::map<std::string, CspPttGroup> m_clsMap;
     CSipMutex m_clsMutex;
 
     bool ReadDir( const char *pszDirName );

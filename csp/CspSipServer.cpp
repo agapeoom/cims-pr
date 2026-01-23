@@ -16,7 +16,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "XmlSipServer.h"
+#include "CspSipServer.h"
 
 #include "MemoryDebug.h"
 #include "XmlElement.h"
@@ -30,10 +30,10 @@ bool CIncomingRoute::IsEmpty() {
     return false;
 }
 
-CXmlSipServer::CXmlSipServer() : m_iFlag( FLAG_DELETE ) {
+CspSipServer::CspSipServer() : m_iFlag( FLAG_DELETE ) {
 }
 
-CXmlSipServer::~CXmlSipServer() {
+CspSipServer::~CspSipServer() {
 }
 
 /**
@@ -42,7 +42,7 @@ CXmlSipServer::~CXmlSipServer() {
  * @param pszFileName IP-PBX 정보를 저장한 XML 파일의 full path
  * @returns 성공하면 true 를 리턴하고 실패하면 false 를 리턴한다.
  */
-bool CXmlSipServer::Parse( const char *pszFileName ) {
+bool CspSipServer::Parse( const char *pszFileName ) {
     CXmlElement clsXml;
     bool bUse;
 
@@ -111,7 +111,7 @@ bool CXmlSipServer::Parse( const char *pszFileName ) {
  * @ingroup CspServer
  * @brief 내부 변수를 초기화 시킨다.
  */
-void CXmlSipServer::Clear() {
+void CspSipServer::Clear() {
     m_strIp.clear();
     m_iPort = 5060;
     m_strDomain.clear();

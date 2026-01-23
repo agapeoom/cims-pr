@@ -1,0 +1,57 @@
+{
+    "Setup": {
+        "Sip": {
+            "LocalIp": "192.168.0.159",
+            "UdpPort": 5060,
+            "UdpThreadCount": 1,
+            "TcpPort": 25061,
+            "TcpThreadCount": 2,
+            "TcpRecvTimeout": 600,
+            "Realm": "csp",
+            "TlsPort": 5061,
+            "TlsAcceptTimeout": 10,
+            "CertFile": "../cert/csp.pem",
+            "MinRegisterTimeout": 60,
+            "CallPickupId": "**",
+            "StackExecutePeriod": 20
+        },
+        "RtpRelay": {
+            "UseRtpRelay": true,
+            "CmpIp": "192.168.0.159",
+            "CmpPort": 9000,
+            "LocalCmpIp": "192.168.0.159",
+            "LocalCmpPort": 9001
+        },
+        "Log": {
+            "Folder": "../log",
+            "MaxSize": 10000000,
+            "Level": {
+                "Debug": true,
+                "Info": true,
+                "Network": true,
+                "Sql": true
+            }
+        },
+        "DataFolder": {
+            "User": "../user",
+            "SipServer": "../route",
+            "Group": "../group"
+        },
+        "Cdr": {
+            "Folder": "../log/cdr"
+        },
+        "Monitor": {
+            "Port": 16000,
+            "ClientIpList": [
+                "127.0.0.1",
+                "192.168.0.159"
+            ]
+        },
+        "Security": {
+            "DenySipUserAgentList": [
+                "friendly-scanner",
+                "sundayddr"
+            ]
+        }
+    }
+}

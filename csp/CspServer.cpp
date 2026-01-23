@@ -45,7 +45,7 @@ int ServiceMain() {
     _CrtSetDbgFlag( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF | _CRTDBG_CHECK_ALWAYS_DF );
 #endif
     if ( gclsSetup.Read( GetConfigFileName() ) == false && gclsSetup.Read( CONFIG_FILENAME ) == false ) {
-        printf( "config filename(%s) read error\n", GetConfigFileName() );
+        CLog::Print( LOG_ERROR, "config filename(%s) read error", GetConfigFileName() );
         return -1;
     }
     CLog::SetDirectory( gclsSetup.m_strLogFolder.c_str() );
@@ -83,13 +83,13 @@ int ServiceMain() {
     Fork( gbFork );
     SetCoreDumpEnable();
     ServerSignal();
-    printf( "Loading SipServerMap...\n" );
+    CLog::Print( LOG_SYSTEM, "Loading SipServerMap..." );
     gclsSipServerMap.Load();
 
     // [FIX] Init CMP Client before loading groups (which triggers AddGroup)
     if ( !gclsCmpClient.Init( gclsSetup.m_strCmpIp, gclsSetup.m_iCmpPort, gclsSetup.m_iLocalCmpPort ) ) {
         CLog::Print( LOG_ERROR, "CmpClient Init failed" );
-        printf( "CmpClient Init failed\n" );
+        CLog::Print( LOG_ERROR, "CmpClient Init failed" );
     }
 
     // [FIX] Wire Connection Callback and Start Monitor
@@ -98,17 +98,17 @@ int ServiceMain() {
     });
     gclsGroupCallService.StartMonitor();
 
-    if ( gclsSetup.m_strGroupXmlFolder.length() > 0 ) {
-        printf( "Loading GroupMap from %s...\n", gclsSetup.m_strGroupXmlFolder.c_str() );
-        gclsGroupMap.Load( gclsSetup.m_strGroupXmlFolder.c_str() );
+    if ( gclsSetup.m_strGroupDataFolder.length() > 0 ) {
+        CLog::Print( LOG_SYSTEM, "Loading GroupMap from %s...", gclsSetup.m_strGroupDataFolder.c_str() );
+        gclsGroupMap.Load( gclsSetup.m_strGroupDataFolder.c_str() );
     }
-    printf( "Starting csp...\n" );
+    CLog::Print( LOG_SYSTEM, "Starting csp..." );
     if ( gclsSipServer.Start( clsSetup ) == false ) {
         CLog::Print( LOG_ERROR, "SipServer start error" );
-        printf( "SipServer start error (check logs/permissions/ports)\n" );
+        CLog::Print( LOG_ERROR, "SipServer start error (check logs/permissions/ports)" );
         return -1;
     }
-    printf( "SipServer started successfully.\n" );
+    CLog::Print( LOG_SYSTEM, "SipServer started successfully." );
     if ( gclsSetup.m_iMonitorPort > 0 ) {
         gclsMonitor.m_iMonitorPort = gclsSetup.m_iMonitorPort;
         StartMonitorServerThread( &gclsMonitor );
@@ -122,15 +122,13 @@ int ServiceMain() {
             gclsNonceMap.DeleteTimeout( 1000 );
             gclsUserMap.DeleteTimeout( 1000 );
             gclsUserMap.SendOptions();
-#ifdef USE_XML_USER_MAP
-            gclsXmlUserMap.DeleteTimeout( 1000 );
-#endif
+            //gclsCspUserMap.DeleteTimeout( 1000 );
         }
         if ( iSecond % 60 == 0 ) {
             gclsSipServerMap.Load();
             gclsSipServerMap.SetSipUserAgentRegisterInfo();
-            if ( gclsSetup.m_strGroupXmlFolder.length() > 0 ) {
-                gclsGroupMap.Load( gclsSetup.m_strGroupXmlFolder.c_str() );
+            if ( gclsSetup.m_strGroupDataFolder.length() > 0 ) {
+                gclsGroupMap.Load( gclsSetup.m_strGroupDataFolder.c_str() );
             }
         }
         if ( iSecond == 3600 ) {
