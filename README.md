@@ -55,7 +55,7 @@ This will create a `dist/` directory in your build folder containing the binarie
 5.1 ** 호처리서버(csp) **
  * foreground 실행 
 ``` bash
-./csp ../config/csp.xml -n 
+./csp ../config/csp.json -n 
 ```
  * background 실행/종료/상태조회
 ``` bash
@@ -72,5 +72,5 @@ This will create a `dist/` directory in your build folder containing the binarie
 
 5.2 ** 미디어처리서버(cmp)
 ``` bash
- ./cmp ../config/cmp.conf
+ ./cmp ../config/cmp.json
 ```
