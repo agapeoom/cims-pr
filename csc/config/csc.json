@@ -1,0 +1,16 @@
+{
+    "Server": {
+        "Ip": "0.0.0.0",
+        "Port": 4420,
+        "CertFile": "../cert/cert.pem",
+        "KeyFile": "../cert/key.pem"
+    },
+    "Log": {
+        "File": "../log/csc.log",
+        "Level": "DEBUG"
+    },
+    "Data": {
+        "User": "/home/nex/work/cims/build/dist/csp/user",
+        "Group": "/home/nex/work/cims/build/dist/csp/group"
+    }
+}
