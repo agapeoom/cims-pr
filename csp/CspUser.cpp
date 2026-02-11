@@ -290,3 +290,41 @@ bool CspUserMap::_remove(std::string strUserId) {
     return true;
 }
 
+static bool ScanUserFiles( const char *pszDirName, std::list<std::string> &clsUserList ) {
+    FILE_LIST clsFileList;
+    if ( CDirectory::List( pszDirName, clsFileList ) == false ) return false;
+
+    for ( auto const &strName : clsFileList ) {
+        if ( strName == "." || strName == ".." ) continue;
+
+        std::string strPath = pszDirName;
+        CDirectory::AppendName( strPath, strName.c_str() );
+
+        if ( CDirectory::IsDirectory( strPath.c_str() ) ) {
+            ScanUserFiles( strPath.c_str(), clsUserList );
+        } else if ( strName.length() > 5 && strName.substr( strName.length() - 5 ) == ".json" ) {
+            std::string strId = strName.substr( 0, strName.length() - 5 );
+            size_t first = strId.find_first_not_of( '0' );
+            if ( std::string::npos == first ) {
+                clsUserList.push_back( "0" );
+            } else {
+                clsUserList.push_back( strId.substr( first ) );
+            }
+        }
+    }
+    return true;
+}
+
+bool CspUserMap::Load( const char *pszDirName ) {
+    std::list<std::string> clsUserList;
+    if ( ScanUserFiles( pszDirName, clsUserList ) == false ) return false;
+
+    for ( auto const &strId : clsUserList ) {
+        CspUser clsUser;
+        if ( Select( strId.c_str(), clsUser ) ) {
+            CLog::Print( LOG_INFO, "UserMap Loaded User(%s) Org(%s)", clsUser.m_strId.c_str(),
+                         clsUser.m_strOrganizationId.c_str() );
+        }
+    }
+    return true;
+}

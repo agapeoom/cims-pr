@@ -30,18 +30,18 @@
 
 /**
  * @ingroup SipStack
- * @brief SIP ¸Þ½ÃÁö¸¦ ÆÄ½ÌÇÏ¿©¼­ SIP stack ¿¡ ÀÔ·ÂÇÑ´Ù.
+ * @brief SIP ï¿½Þ½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ä½ï¿½ï¿½Ï¿ï¿½ï¿½ï¿½ SIP stack ï¿½ï¿½ ï¿½Ô·ï¿½ï¿½Ñ´ï¿½.
  * @param pclsSipStack SIP stack
- * @param iThreadId		UDP ¾²·¹µå ¹øÈ£
- * @param pszBuf			³×Æ®¿öÅ©¿¡¼­ ¼ö½ÅµÈ SIP ¸Þ½ÃÁö
- * @param iBufLen			³×Æ®¿öÅ©¿¡¼­ ¼ö½ÅµÈ SIP ¸Þ½ÃÁöÀÇ ±æÀÌ
- * @param pszIp				IP ÁÖ¼Ò
- * @param iPort				Æ÷Æ® ¹øÈ£
- * @returns ¼º°øÇÏ¸é true ¸¦ ¸®ÅÏÇÏ°í ½ÇÆÐÇÏ¸é false ¸¦ ¸®ÅÏÇÑ´Ù.
+ * @param iThreadId		UDP ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È£
+ * @param pszBuf			ï¿½ï¿½Æ®ï¿½ï¿½Å©ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Åµï¿½ SIP ï¿½Þ½ï¿½ï¿½ï¿½
+ * @param iBufLen			ï¿½ï¿½Æ®ï¿½ï¿½Å©ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Åµï¿½ SIP ï¿½Þ½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+ * @param pszIp				IP ï¿½Ö¼ï¿½
+ * @param iPort				ï¿½ï¿½Æ® ï¿½ï¿½È£
+ * @returns ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ true ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ false ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
  */
 static bool SipMessageProcess( CSipStack * pclsSipStack, int iThreadId, const char * pszBuf, int iBufLen, const char * pszIp, unsigned short iPort )
 {
-	CLog::Print( LOG_NETWORK, "TlsRecv(%s:%d) [%.*s]", pszIp, iPort, iBufLen, pszBuf );
+	CLog::Print( LOG_NETWORK, "TlsRecv(%s:%d) \n[%.*s]", pszIp, iPort, iBufLen, pszBuf );
 
 	if( pclsSipStack->m_clsSetup.m_iTcpCallBackThreadCount > 0 )
 	{
@@ -53,9 +53,9 @@ static bool SipMessageProcess( CSipStack * pclsSipStack, int iThreadId, const ch
 
 /**
  * @ingroup SipStack
- * @brief TLS ¼¼¼ÇÀ» À§ÇÑ ¾²·¹µå ÇÔ¼ö
- * @param lpParameter CThreadListEntry °´Ã¼ÀÇ Æ÷ÀÎÅÍ
- * @returns 0 À» ¸®ÅÏÇÑ´Ù.
+ * @brief TLS ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½
+ * @param lpParameter CThreadListEntry ï¿½ï¿½Ã¼ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @returns 0 ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
  */
 THREAD_API SipTlsThread( LPVOID lpParameter )
 {
@@ -174,9 +174,9 @@ FUNC_END:
 
 /** 
  * @ingroup SipStack
- * @brief TLS ÇÁ·ÎÅäÄÝ·Î SIP ¸Þ½ÃÁö ¼ö½Å ¹× SIP ¼ö½Å ÀÌº¥Æ®¸¦ Ã³¸®ÇÏ´Â ¾²·¹µå ÇÔ¼ö
- * @param lpParameter SIP stack Æ÷ÀÎÅÍ
- * @returns 0 À» ¸®ÅÏÇÑ´Ù.
+ * @brief TLS ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý·ï¿½ SIP ï¿½Þ½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ SIP ï¿½ï¿½ï¿½ï¿½ ï¿½Ìºï¿½Æ®ï¿½ï¿½ Ã³ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½
+ * @param lpParameter SIP stack ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @returns 0 ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
  */
 THREAD_API SipTlsListenThread( LPVOID lpParameter )
 {
@@ -225,9 +225,9 @@ FUNC_END:
 
 /**
  * @ingroup SipStack
- * @brief TLS ÇÁ·ÎÅäÄÝ·Î SIP ¸Þ½ÃÁö ¼ö½Å ¹× SIP ¼ö½Å ÀÌº¥Æ®¸¦ Ã³¸®ÇÏ´Â Thread Pool À» ½ÃÀÛÇÑ´Ù.
- * @param pclsSipStack SIP stack Æ÷ÀÎÅÍ
- * @returns ¼º°øÇÏ¸é true ¸¦ ¸®ÅÏÇÏ°í ½ÇÆÐÇÏ¸é false ¸¦ ¸®ÅÏÇÑ´Ù.
+ * @brief TLS ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý·ï¿½ SIP ï¿½Þ½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ SIP ï¿½ï¿½ï¿½ï¿½ ï¿½Ìºï¿½Æ®ï¿½ï¿½ Ã³ï¿½ï¿½ï¿½Ï´ï¿½ Thread Pool ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
+ * @param pclsSipStack SIP stack ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @returns ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ true ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ false ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
  */
 bool StartSipTlsListenThread( CSipStack * pclsSipStack )
 {

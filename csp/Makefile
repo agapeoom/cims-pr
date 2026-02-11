@@ -57,10 +57,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/nex/work/cims
+CMAKE_SOURCE_DIR = /home/agapeoom/cims/csp
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/nex/work/cims
+CMAKE_BINARY_DIR = /home/agapeoom/cims/csp
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -132,14 +132,14 @@ install/strip/fast: preinstall/fast
 
 # The main all target
 all: cmake_check_build_system
-	cd /home/nex/work/cims && $(CMAKE_COMMAND) -E cmake_progress_start /home/nex/work/cims/CMakeFiles /home/nex/work/cims/csp//CMakeFiles/progress.marks
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 csp/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/nex/work/cims/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/agapeoom/cims/csp/CMakeFiles /home/agapeoom/cims/csp//CMakeFiles/progress.marks
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/agapeoom/cims/csp/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 csp/clean
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 clean
 .PHONY : clean
 
 # The main clean target
@@ -148,39 +148,272 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 csp/preinstall
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 csp/preinstall
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd /home/nex/work/cims && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	$(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
-# Convenience name for target.
-csp/CMakeFiles/csp.dir/rule:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 csp/CMakeFiles/csp.dir/rule
-.PHONY : csp/CMakeFiles/csp.dir/rule
+#=============================================================================
+# Target rules for targets named csp
 
-# Convenience name for target.
-csp: csp/CMakeFiles/csp.dir/rule
+# Build rule for target.
+csp: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 csp
 .PHONY : csp
 
 # fast build rule for target.
 csp/fast:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/build
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/build
 .PHONY : csp/fast
+
+#=============================================================================
+# Target rules for targets named opensrtp
+
+# Build rule for target.
+opensrtp: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 opensrtp
+.PHONY : opensrtp
+
+# fast build rule for target.
+opensrtp/fast:
+	$(MAKE) $(MAKESILENT) -f psip_build/CMakeFiles/opensrtp.dir/build.make psip_build/CMakeFiles/opensrtp.dir/build
+.PHONY : opensrtp/fast
+
+#=============================================================================
+# Target rules for targets named SipPlatform
+
+# Build rule for target.
+SipPlatform: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 SipPlatform
+.PHONY : SipPlatform
+
+# fast build rule for target.
+SipPlatform/fast:
+	$(MAKE) $(MAKESILENT) -f psip_build/CMakeFiles/SipPlatform.dir/build.make psip_build/CMakeFiles/SipPlatform.dir/build
+.PHONY : SipPlatform/fast
+
+#=============================================================================
+# Target rules for targets named SipParser
+
+# Build rule for target.
+SipParser: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 SipParser
+.PHONY : SipParser
+
+# fast build rule for target.
+SipParser/fast:
+	$(MAKE) $(MAKESILENT) -f psip_build/CMakeFiles/SipParser.dir/build.make psip_build/CMakeFiles/SipParser.dir/build
+.PHONY : SipParser/fast
+
+#=============================================================================
+# Target rules for targets named SdpParser
+
+# Build rule for target.
+SdpParser: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 SdpParser
+.PHONY : SdpParser
+
+# fast build rule for target.
+SdpParser/fast:
+	$(MAKE) $(MAKESILENT) -f psip_build/CMakeFiles/SdpParser.dir/build.make psip_build/CMakeFiles/SdpParser.dir/build
+.PHONY : SdpParser/fast
+
+#=============================================================================
+# Target rules for targets named StunParser
+
+# Build rule for target.
+StunParser: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 StunParser
+.PHONY : StunParser
+
+# fast build rule for target.
+StunParser/fast:
+	$(MAKE) $(MAKESILENT) -f psip_build/CMakeFiles/StunParser.dir/build.make psip_build/CMakeFiles/StunParser.dir/build
+.PHONY : StunParser/fast
+
+#=============================================================================
+# Target rules for targets named XmlParser
+
+# Build rule for target.
+XmlParser: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 XmlParser
+.PHONY : XmlParser
+
+# fast build rule for target.
+XmlParser/fast:
+	$(MAKE) $(MAKESILENT) -f psip_build/CMakeFiles/XmlParser.dir/build.make psip_build/CMakeFiles/XmlParser.dir/build
+.PHONY : XmlParser/fast
+
+#=============================================================================
+# Target rules for targets named HttpParser
+
+# Build rule for target.
+HttpParser: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 HttpParser
+.PHONY : HttpParser
+
+# fast build rule for target.
+HttpParser/fast:
+	$(MAKE) $(MAKESILENT) -f psip_build/CMakeFiles/HttpParser.dir/build.make psip_build/CMakeFiles/HttpParser.dir/build
+.PHONY : HttpParser/fast
+
+#=============================================================================
+# Target rules for targets named TcpStack
+
+# Build rule for target.
+TcpStack: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 TcpStack
+.PHONY : TcpStack
+
+# fast build rule for target.
+TcpStack/fast:
+	$(MAKE) $(MAKESILENT) -f psip_build/CMakeFiles/TcpStack.dir/build.make psip_build/CMakeFiles/TcpStack.dir/build
+.PHONY : TcpStack/fast
+
+#=============================================================================
+# Target rules for targets named HttpStack
+
+# Build rule for target.
+HttpStack: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 HttpStack
+.PHONY : HttpStack
+
+# fast build rule for target.
+HttpStack/fast:
+	$(MAKE) $(MAKESILENT) -f psip_build/CMakeFiles/HttpStack.dir/build.make psip_build/CMakeFiles/HttpStack.dir/build
+.PHONY : HttpStack/fast
+
+#=============================================================================
+# Target rules for targets named SipStack
+
+# Build rule for target.
+SipStack: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 SipStack
+.PHONY : SipStack
+
+# fast build rule for target.
+SipStack/fast:
+	$(MAKE) $(MAKESILENT) -f psip_build/CMakeFiles/SipStack.dir/build.make psip_build/CMakeFiles/SipStack.dir/build
+.PHONY : SipStack/fast
+
+#=============================================================================
+# Target rules for targets named ServerPlatform
+
+# Build rule for target.
+ServerPlatform: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ServerPlatform
+.PHONY : ServerPlatform
+
+# fast build rule for target.
+ServerPlatform/fast:
+	$(MAKE) $(MAKESILENT) -f psip_build/CMakeFiles/ServerPlatform.dir/build.make psip_build/CMakeFiles/ServerPlatform.dir/build
+.PHONY : ServerPlatform/fast
+
+#=============================================================================
+# Target rules for targets named SipUserAgent
+
+# Build rule for target.
+SipUserAgent: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 SipUserAgent
+.PHONY : SipUserAgent
+
+# fast build rule for target.
+SipUserAgent/fast:
+	$(MAKE) $(MAKESILENT) -f psip_build/CMakeFiles/SipUserAgent.dir/build.make psip_build/CMakeFiles/SipUserAgent.dir/build
+.PHONY : SipUserAgent/fast
+
+#=============================================================================
+# Target rules for targets named EchoSipServer
+
+# Build rule for target.
+EchoSipServer: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 EchoSipServer
+.PHONY : EchoSipServer
+
+# fast build rule for target.
+EchoSipServer/fast:
+	$(MAKE) $(MAKESILENT) -f psip_build/CMakeFiles/EchoSipServer.dir/build.make psip_build/CMakeFiles/EchoSipServer.dir/build
+.PHONY : EchoSipServer/fast
+
+#=============================================================================
+# Target rules for targets named SimpleSipServer
+
+# Build rule for target.
+SimpleSipServer: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 SimpleSipServer
+.PHONY : SimpleSipServer
+
+# fast build rule for target.
+SimpleSipServer/fast:
+	$(MAKE) $(MAKESILENT) -f psip_build/CMakeFiles/SimpleSipServer.dir/build.make psip_build/CMakeFiles/SimpleSipServer.dir/build
+.PHONY : SimpleSipServer/fast
+
+#=============================================================================
+# Target rules for targets named SipClient
+
+# Build rule for target.
+SipClient: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 SipClient
+.PHONY : SipClient
+
+# fast build rule for target.
+SipClient/fast:
+	$(MAKE) $(MAKESILENT) -f psip_build/CMakeFiles/SipClient.dir/build.make psip_build/CMakeFiles/SipClient.dir/build
+.PHONY : SipClient/fast
+
+#=============================================================================
+# Target rules for targets named SipLoadBalancer
+
+# Build rule for target.
+SipLoadBalancer: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 SipLoadBalancer
+.PHONY : SipLoadBalancer
+
+# fast build rule for target.
+SipLoadBalancer/fast:
+	$(MAKE) $(MAKESILENT) -f psip_build/CMakeFiles/SipLoadBalancer.dir/build.make psip_build/CMakeFiles/SipLoadBalancer.dir/build
+.PHONY : SipLoadBalancer/fast
+
+#=============================================================================
+# Target rules for targets named SipSpeedLinux
+
+# Build rule for target.
+SipSpeedLinux: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 SipSpeedLinux
+.PHONY : SipSpeedLinux
+
+# fast build rule for target.
+SipSpeedLinux/fast:
+	$(MAKE) $(MAKESILENT) -f psip_build/CMakeFiles/SipSpeedLinux.dir/build.make psip_build/CMakeFiles/SipSpeedLinux.dir/build
+.PHONY : SipSpeedLinux/fast
+
+#=============================================================================
+# Target rules for targets named TestWebRtcVideo
+
+# Build rule for target.
+TestWebRtcVideo: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 TestWebRtcVideo
+.PHONY : TestWebRtcVideo
+
+# fast build rule for target.
+TestWebRtcVideo/fast:
+	$(MAKE) $(MAKESILENT) -f psip_build/CMakeFiles/TestWebRtcVideo.dir/build.make psip_build/CMakeFiles/TestWebRtcVideo.dir/build
+.PHONY : TestWebRtcVideo/fast
 
 CallMap.o: CallMap.cpp.o
 .PHONY : CallMap.o
 
 # target to build an object file
 CallMap.cpp.o:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/CallMap.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/CallMap.cpp.o
 .PHONY : CallMap.cpp.o
 
 CallMap.i: CallMap.cpp.i
@@ -188,7 +421,7 @@ CallMap.i: CallMap.cpp.i
 
 # target to preprocess a source file
 CallMap.cpp.i:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/CallMap.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/CallMap.cpp.i
 .PHONY : CallMap.cpp.i
 
 CallMap.s: CallMap.cpp.s
@@ -196,7 +429,7 @@ CallMap.s: CallMap.cpp.s
 
 # target to generate assembly for a file
 CallMap.cpp.s:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/CallMap.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/CallMap.cpp.s
 .PHONY : CallMap.cpp.s
 
 CmpClient.o: CmpClient.cpp.o
@@ -204,7 +437,7 @@ CmpClient.o: CmpClient.cpp.o
 
 # target to build an object file
 CmpClient.cpp.o:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/CmpClient.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/CmpClient.cpp.o
 .PHONY : CmpClient.cpp.o
 
 CmpClient.i: CmpClient.cpp.i
@@ -212,7 +445,7 @@ CmpClient.i: CmpClient.cpp.i
 
 # target to preprocess a source file
 CmpClient.cpp.i:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/CmpClient.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/CmpClient.cpp.i
 .PHONY : CmpClient.cpp.i
 
 CmpClient.s: CmpClient.cpp.s
@@ -220,15 +453,63 @@ CmpClient.s: CmpClient.cpp.s
 
 # target to generate assembly for a file
 CmpClient.cpp.s:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/CmpClient.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/CmpClient.cpp.s
 .PHONY : CmpClient.cpp.s
+
+CscInterface.o: CscInterface.cpp.o
+.PHONY : CscInterface.o
+
+# target to build an object file
+CscInterface.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/CscInterface.cpp.o
+.PHONY : CscInterface.cpp.o
+
+CscInterface.i: CscInterface.cpp.i
+.PHONY : CscInterface.i
+
+# target to preprocess a source file
+CscInterface.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/CscInterface.cpp.i
+.PHONY : CscInterface.cpp.i
+
+CscInterface.s: CscInterface.cpp.s
+.PHONY : CscInterface.s
+
+# target to generate assembly for a file
+CscInterface.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/CscInterface.cpp.s
+.PHONY : CscInterface.cpp.s
+
+CspPttGroup.o: CspPttGroup.cpp.o
+.PHONY : CspPttGroup.o
+
+# target to build an object file
+CspPttGroup.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/CspPttGroup.cpp.o
+.PHONY : CspPttGroup.cpp.o
+
+CspPttGroup.i: CspPttGroup.cpp.i
+.PHONY : CspPttGroup.i
+
+# target to preprocess a source file
+CspPttGroup.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/CspPttGroup.cpp.i
+.PHONY : CspPttGroup.cpp.i
+
+CspPttGroup.s: CspPttGroup.cpp.s
+.PHONY : CspPttGroup.s
+
+# target to generate assembly for a file
+CspPttGroup.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/CspPttGroup.cpp.s
+.PHONY : CspPttGroup.cpp.s
 
 CspServer.o: CspServer.cpp.o
 .PHONY : CspServer.o
 
 # target to build an object file
 CspServer.cpp.o:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/CspServer.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/CspServer.cpp.o
 .PHONY : CspServer.cpp.o
 
 CspServer.i: CspServer.cpp.i
@@ -236,7 +517,7 @@ CspServer.i: CspServer.cpp.i
 
 # target to preprocess a source file
 CspServer.cpp.i:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/CspServer.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/CspServer.cpp.i
 .PHONY : CspServer.cpp.i
 
 CspServer.s: CspServer.cpp.s
@@ -244,15 +525,63 @@ CspServer.s: CspServer.cpp.s
 
 # target to generate assembly for a file
 CspServer.cpp.s:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/CspServer.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/CspServer.cpp.s
 .PHONY : CspServer.cpp.s
+
+CspSipServer.o: CspSipServer.cpp.o
+.PHONY : CspSipServer.o
+
+# target to build an object file
+CspSipServer.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/CspSipServer.cpp.o
+.PHONY : CspSipServer.cpp.o
+
+CspSipServer.i: CspSipServer.cpp.i
+.PHONY : CspSipServer.i
+
+# target to preprocess a source file
+CspSipServer.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/CspSipServer.cpp.i
+.PHONY : CspSipServer.cpp.i
+
+CspSipServer.s: CspSipServer.cpp.s
+.PHONY : CspSipServer.s
+
+# target to generate assembly for a file
+CspSipServer.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/CspSipServer.cpp.s
+.PHONY : CspSipServer.cpp.s
+
+CspUser.o: CspUser.cpp.o
+.PHONY : CspUser.o
+
+# target to build an object file
+CspUser.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/CspUser.cpp.o
+.PHONY : CspUser.cpp.o
+
+CspUser.i: CspUser.cpp.i
+.PHONY : CspUser.i
+
+# target to preprocess a source file
+CspUser.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/CspUser.cpp.i
+.PHONY : CspUser.cpp.i
+
+CspUser.s: CspUser.cpp.s
+.PHONY : CspUser.s
+
+# target to generate assembly for a file
+CspUser.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/CspUser.cpp.s
+.PHONY : CspUser.cpp.s
 
 GroupCallService.o: GroupCallService.cpp.o
 .PHONY : GroupCallService.o
 
 # target to build an object file
 GroupCallService.cpp.o:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/GroupCallService.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/GroupCallService.cpp.o
 .PHONY : GroupCallService.cpp.o
 
 GroupCallService.i: GroupCallService.cpp.i
@@ -260,7 +589,7 @@ GroupCallService.i: GroupCallService.cpp.i
 
 # target to preprocess a source file
 GroupCallService.cpp.i:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/GroupCallService.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/GroupCallService.cpp.i
 .PHONY : GroupCallService.cpp.i
 
 GroupCallService.s: GroupCallService.cpp.s
@@ -268,7 +597,7 @@ GroupCallService.s: GroupCallService.cpp.s
 
 # target to generate assembly for a file
 GroupCallService.cpp.s:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/GroupCallService.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/GroupCallService.cpp.s
 .PHONY : GroupCallService.cpp.s
 
 GroupMap.o: GroupMap.cpp.o
@@ -276,7 +605,7 @@ GroupMap.o: GroupMap.cpp.o
 
 # target to build an object file
 GroupMap.cpp.o:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/GroupMap.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/GroupMap.cpp.o
 .PHONY : GroupMap.cpp.o
 
 GroupMap.i: GroupMap.cpp.i
@@ -284,7 +613,7 @@ GroupMap.i: GroupMap.cpp.i
 
 # target to preprocess a source file
 GroupMap.cpp.i:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/GroupMap.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/GroupMap.cpp.i
 .PHONY : GroupMap.cpp.i
 
 GroupMap.s: GroupMap.cpp.s
@@ -292,7 +621,7 @@ GroupMap.s: GroupMap.cpp.s
 
 # target to generate assembly for a file
 GroupMap.cpp.s:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/GroupMap.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/GroupMap.cpp.s
 .PHONY : GroupMap.cpp.s
 
 Monitor.o: Monitor.cpp.o
@@ -300,7 +629,7 @@ Monitor.o: Monitor.cpp.o
 
 # target to build an object file
 Monitor.cpp.o:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/Monitor.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/Monitor.cpp.o
 .PHONY : Monitor.cpp.o
 
 Monitor.i: Monitor.cpp.i
@@ -308,7 +637,7 @@ Monitor.i: Monitor.cpp.i
 
 # target to preprocess a source file
 Monitor.cpp.i:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/Monitor.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/Monitor.cpp.i
 .PHONY : Monitor.cpp.i
 
 Monitor.s: Monitor.cpp.s
@@ -316,7 +645,7 @@ Monitor.s: Monitor.cpp.s
 
 # target to generate assembly for a file
 Monitor.cpp.s:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/Monitor.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/Monitor.cpp.s
 .PHONY : Monitor.cpp.s
 
 NonceMap.o: NonceMap.cpp.o
@@ -324,7 +653,7 @@ NonceMap.o: NonceMap.cpp.o
 
 # target to build an object file
 NonceMap.cpp.o:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/NonceMap.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/NonceMap.cpp.o
 .PHONY : NonceMap.cpp.o
 
 NonceMap.i: NonceMap.cpp.i
@@ -332,7 +661,7 @@ NonceMap.i: NonceMap.cpp.i
 
 # target to preprocess a source file
 NonceMap.cpp.i:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/NonceMap.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/NonceMap.cpp.i
 .PHONY : NonceMap.cpp.i
 
 NonceMap.s: NonceMap.cpp.s
@@ -340,7 +669,7 @@ NonceMap.s: NonceMap.cpp.s
 
 # target to generate assembly for a file
 NonceMap.cpp.s:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/NonceMap.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/NonceMap.cpp.s
 .PHONY : NonceMap.cpp.s
 
 RtpMap.o: RtpMap.cpp.o
@@ -348,7 +677,7 @@ RtpMap.o: RtpMap.cpp.o
 
 # target to build an object file
 RtpMap.cpp.o:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/RtpMap.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/RtpMap.cpp.o
 .PHONY : RtpMap.cpp.o
 
 RtpMap.i: RtpMap.cpp.i
@@ -356,7 +685,7 @@ RtpMap.i: RtpMap.cpp.i
 
 # target to preprocess a source file
 RtpMap.cpp.i:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/RtpMap.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/RtpMap.cpp.i
 .PHONY : RtpMap.cpp.i
 
 RtpMap.s: RtpMap.cpp.s
@@ -364,7 +693,7 @@ RtpMap.s: RtpMap.cpp.s
 
 # target to generate assembly for a file
 RtpMap.cpp.s:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/RtpMap.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/RtpMap.cpp.s
 .PHONY : RtpMap.cpp.s
 
 RtpThread.o: RtpThread.cpp.o
@@ -372,7 +701,7 @@ RtpThread.o: RtpThread.cpp.o
 
 # target to build an object file
 RtpThread.cpp.o:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/RtpThread.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/RtpThread.cpp.o
 .PHONY : RtpThread.cpp.o
 
 RtpThread.i: RtpThread.cpp.i
@@ -380,7 +709,7 @@ RtpThread.i: RtpThread.cpp.i
 
 # target to preprocess a source file
 RtpThread.cpp.i:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/RtpThread.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/RtpThread.cpp.i
 .PHONY : RtpThread.cpp.i
 
 RtpThread.s: RtpThread.cpp.s
@@ -388,7 +717,7 @@ RtpThread.s: RtpThread.cpp.s
 
 # target to generate assembly for a file
 RtpThread.cpp.s:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/RtpThread.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/RtpThread.cpp.s
 .PHONY : RtpThread.cpp.s
 
 SipServer.o: SipServer.cpp.o
@@ -396,7 +725,7 @@ SipServer.o: SipServer.cpp.o
 
 # target to build an object file
 SipServer.cpp.o:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/SipServer.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/SipServer.cpp.o
 .PHONY : SipServer.cpp.o
 
 SipServer.i: SipServer.cpp.i
@@ -404,7 +733,7 @@ SipServer.i: SipServer.cpp.i
 
 # target to preprocess a source file
 SipServer.cpp.i:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/SipServer.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/SipServer.cpp.i
 .PHONY : SipServer.cpp.i
 
 SipServer.s: SipServer.cpp.s
@@ -412,7 +741,7 @@ SipServer.s: SipServer.cpp.s
 
 # target to generate assembly for a file
 SipServer.cpp.s:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/SipServer.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/SipServer.cpp.s
 .PHONY : SipServer.cpp.s
 
 SipServerMap.o: SipServerMap.cpp.o
@@ -420,7 +749,7 @@ SipServerMap.o: SipServerMap.cpp.o
 
 # target to build an object file
 SipServerMap.cpp.o:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/SipServerMap.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/SipServerMap.cpp.o
 .PHONY : SipServerMap.cpp.o
 
 SipServerMap.i: SipServerMap.cpp.i
@@ -428,7 +757,7 @@ SipServerMap.i: SipServerMap.cpp.i
 
 # target to preprocess a source file
 SipServerMap.cpp.i:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/SipServerMap.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/SipServerMap.cpp.i
 .PHONY : SipServerMap.cpp.i
 
 SipServerMap.s: SipServerMap.cpp.s
@@ -436,7 +765,7 @@ SipServerMap.s: SipServerMap.cpp.s
 
 # target to generate assembly for a file
 SipServerMap.cpp.s:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/SipServerMap.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/SipServerMap.cpp.s
 .PHONY : SipServerMap.cpp.s
 
 SipServerSetup.o: SipServerSetup.cpp.o
@@ -444,7 +773,7 @@ SipServerSetup.o: SipServerSetup.cpp.o
 
 # target to build an object file
 SipServerSetup.cpp.o:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/SipServerSetup.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/SipServerSetup.cpp.o
 .PHONY : SipServerSetup.cpp.o
 
 SipServerSetup.i: SipServerSetup.cpp.i
@@ -452,7 +781,7 @@ SipServerSetup.i: SipServerSetup.cpp.i
 
 # target to preprocess a source file
 SipServerSetup.cpp.i:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/SipServerSetup.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/SipServerSetup.cpp.i
 .PHONY : SipServerSetup.cpp.i
 
 SipServerSetup.s: SipServerSetup.cpp.s
@@ -460,15 +789,39 @@ SipServerSetup.s: SipServerSetup.cpp.s
 
 # target to generate assembly for a file
 SipServerSetup.cpp.s:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/SipServerSetup.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/SipServerSetup.cpp.s
 .PHONY : SipServerSetup.cpp.s
+
+SubscriptionManager.o: SubscriptionManager.cpp.o
+.PHONY : SubscriptionManager.o
+
+# target to build an object file
+SubscriptionManager.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/SubscriptionManager.cpp.o
+.PHONY : SubscriptionManager.cpp.o
+
+SubscriptionManager.i: SubscriptionManager.cpp.i
+.PHONY : SubscriptionManager.i
+
+# target to preprocess a source file
+SubscriptionManager.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/SubscriptionManager.cpp.i
+.PHONY : SubscriptionManager.cpp.i
+
+SubscriptionManager.s: SubscriptionManager.cpp.s
+.PHONY : SubscriptionManager.s
+
+# target to generate assembly for a file
+SubscriptionManager.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/SubscriptionManager.cpp.s
+.PHONY : SubscriptionManager.cpp.s
 
 UserMap.o: UserMap.cpp.o
 .PHONY : UserMap.o
 
 # target to build an object file
 UserMap.cpp.o:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/UserMap.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/UserMap.cpp.o
 .PHONY : UserMap.cpp.o
 
 UserMap.i: UserMap.cpp.i
@@ -476,7 +829,7 @@ UserMap.i: UserMap.cpp.i
 
 # target to preprocess a source file
 UserMap.cpp.i:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/UserMap.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/UserMap.cpp.i
 .PHONY : UserMap.cpp.i
 
 UserMap.s: UserMap.cpp.s
@@ -484,80 +837,8 @@ UserMap.s: UserMap.cpp.s
 
 # target to generate assembly for a file
 UserMap.cpp.s:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/UserMap.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/csp.dir/build.make CMakeFiles/csp.dir/UserMap.cpp.s
 .PHONY : UserMap.cpp.s
-
-XmlGroup.o: XmlGroup.cpp.o
-.PHONY : XmlGroup.o
-
-# target to build an object file
-XmlGroup.cpp.o:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/XmlGroup.cpp.o
-.PHONY : XmlGroup.cpp.o
-
-XmlGroup.i: XmlGroup.cpp.i
-.PHONY : XmlGroup.i
-
-# target to preprocess a source file
-XmlGroup.cpp.i:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/XmlGroup.cpp.i
-.PHONY : XmlGroup.cpp.i
-
-XmlGroup.s: XmlGroup.cpp.s
-.PHONY : XmlGroup.s
-
-# target to generate assembly for a file
-XmlGroup.cpp.s:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/XmlGroup.cpp.s
-.PHONY : XmlGroup.cpp.s
-
-XmlSipServer.o: XmlSipServer.cpp.o
-.PHONY : XmlSipServer.o
-
-# target to build an object file
-XmlSipServer.cpp.o:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/XmlSipServer.cpp.o
-.PHONY : XmlSipServer.cpp.o
-
-XmlSipServer.i: XmlSipServer.cpp.i
-.PHONY : XmlSipServer.i
-
-# target to preprocess a source file
-XmlSipServer.cpp.i:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/XmlSipServer.cpp.i
-.PHONY : XmlSipServer.cpp.i
-
-XmlSipServer.s: XmlSipServer.cpp.s
-.PHONY : XmlSipServer.s
-
-# target to generate assembly for a file
-XmlSipServer.cpp.s:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/XmlSipServer.cpp.s
-.PHONY : XmlSipServer.cpp.s
-
-XmlUser.o: XmlUser.cpp.o
-.PHONY : XmlUser.o
-
-# target to build an object file
-XmlUser.cpp.o:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/XmlUser.cpp.o
-.PHONY : XmlUser.cpp.o
-
-XmlUser.i: XmlUser.cpp.i
-.PHONY : XmlUser.i
-
-# target to preprocess a source file
-XmlUser.cpp.i:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/XmlUser.cpp.i
-.PHONY : XmlUser.cpp.i
-
-XmlUser.s: XmlUser.cpp.s
-.PHONY : XmlUser.s
-
-# target to generate assembly for a file
-XmlUser.cpp.s:
-	cd /home/nex/work/cims && $(MAKE) $(MAKESILENT) -f csp/CMakeFiles/csp.dir/build.make csp/CMakeFiles/csp.dir/XmlUser.cpp.s
-.PHONY : XmlUser.cpp.s
 
 # Help Target
 help:
@@ -571,16 +852,46 @@ help:
 	@echo "... install/strip"
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
+	@echo "... EchoSipServer"
+	@echo "... HttpParser"
+	@echo "... HttpStack"
+	@echo "... SdpParser"
+	@echo "... ServerPlatform"
+	@echo "... SimpleSipServer"
+	@echo "... SipClient"
+	@echo "... SipLoadBalancer"
+	@echo "... SipParser"
+	@echo "... SipPlatform"
+	@echo "... SipSpeedLinux"
+	@echo "... SipStack"
+	@echo "... SipUserAgent"
+	@echo "... StunParser"
+	@echo "... TcpStack"
+	@echo "... TestWebRtcVideo"
+	@echo "... XmlParser"
 	@echo "... csp"
+	@echo "... opensrtp"
 	@echo "... CallMap.o"
 	@echo "... CallMap.i"
 	@echo "... CallMap.s"
 	@echo "... CmpClient.o"
 	@echo "... CmpClient.i"
 	@echo "... CmpClient.s"
+	@echo "... CscInterface.o"
+	@echo "... CscInterface.i"
+	@echo "... CscInterface.s"
+	@echo "... CspPttGroup.o"
+	@echo "... CspPttGroup.i"
+	@echo "... CspPttGroup.s"
 	@echo "... CspServer.o"
 	@echo "... CspServer.i"
 	@echo "... CspServer.s"
+	@echo "... CspSipServer.o"
+	@echo "... CspSipServer.i"
+	@echo "... CspSipServer.s"
+	@echo "... CspUser.o"
+	@echo "... CspUser.i"
+	@echo "... CspUser.s"
 	@echo "... GroupCallService.o"
 	@echo "... GroupCallService.i"
 	@echo "... GroupCallService.s"
@@ -608,18 +919,12 @@ help:
 	@echo "... SipServerSetup.o"
 	@echo "... SipServerSetup.i"
 	@echo "... SipServerSetup.s"
+	@echo "... SubscriptionManager.o"
+	@echo "... SubscriptionManager.i"
+	@echo "... SubscriptionManager.s"
 	@echo "... UserMap.o"
 	@echo "... UserMap.i"
 	@echo "... UserMap.s"
-	@echo "... XmlGroup.o"
-	@echo "... XmlGroup.i"
-	@echo "... XmlGroup.s"
-	@echo "... XmlSipServer.o"
-	@echo "... XmlSipServer.i"
-	@echo "... XmlSipServer.s"
-	@echo "... XmlUser.o"
-	@echo "... XmlUser.i"
-	@echo "... XmlUser.s"
 .PHONY : help
 
 
@@ -631,6 +936,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd /home/nex/work/cims && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	$(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

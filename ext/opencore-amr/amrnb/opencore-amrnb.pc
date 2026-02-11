@@ -1,4 +1,4 @@
-prefix=/home/nex/work/cims/pkg/opencore-amr
+prefix=/home/agapeoom/cims/pkg/opencore-amr
 exec_prefix=${prefix}
 libdir=${exec_prefix}/lib
 includedir=${prefix}/include

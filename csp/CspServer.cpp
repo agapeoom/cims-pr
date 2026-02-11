@@ -35,6 +35,13 @@
 #include "UserMap.h"
 #include "GroupMap.h"
 #include "GroupCallService.h"
+#include "CscInterface.h"
+#include "SubscriptionManager.h"
+#include "UserMap.h"
+#include "SipUri.h"
+
+// Forward Declaration for Notify Helper
+void SendSipNotify(const std::string& uri, const std::string& etag, const std::string& action);
 
 bool gbFork = true;
 /**
@@ -102,7 +109,25 @@ int ServiceMain() {
         CLog::Print( LOG_SYSTEM, "Loading GroupMap from %s...", gclsSetup.m_strGroupDataFolder.c_str() );
         gclsGroupMap.Load( gclsSetup.m_strGroupDataFolder.c_str() );
     }
+    if ( gclsSetup.m_strUserDataFolder.length() > 0 ) {
+        CLog::Print( LOG_SYSTEM, "Loading CspUserMap from %s...", gclsSetup.m_strUserDataFolder.c_str() );
+        gclsCspUserMap.Load( gclsSetup.m_strUserDataFolder.c_str() );
+    }
+
+    {
+        USER_ID_LIST clsRegList;
+        gclsUserMap.GetRegisteredUsers( clsRegList );
+        std::string strRegUsers;
+        for ( auto const &strId : clsRegList ) {
+            if ( !strRegUsers.empty() ) strRegUsers += ", ";
+            strRegUsers += strId;
+        }
+        CLog::Print( LOG_INFO, "Total Registered Users[%s]", strRegUsers.c_str() );
+    }
     CLog::Print( LOG_SYSTEM, "Starting csp..." );
+    if ( gclsCscInterface.Start( 4421 ) == false ) {
+        CLog::Print( LOG_ERROR, "CscInterface start error (Port 4421)" );
+    }
     if ( gclsSipServer.Start( clsSetup ) == false ) {
         CLog::Print( LOG_ERROR, "SipServer start error" );
         CLog::Print( LOG_ERROR, "SipServer start error (check logs/permissions/ports)" );
@@ -141,6 +166,7 @@ int ServiceMain() {
     gclsCallMap.StopCallAll();
     gclsTransCallMap.StopCallAll();
     gclsGroupCallService.StopMonitor();
+    gclsCscInterface.Stop();
     for ( int i = 0; i < 20; ++i ) {
         if ( gclsUserAgent.GetCallCount() == 0 ) {
             break;
@@ -153,6 +179,122 @@ int ServiceMain() {
     CLog::Release();
     return 0;
 }
+
+// Logic to send SIP NOTIFY
+#include "SipMessage.h"
+extern CSipUserAgent gclsUserAgent;
+
+void SendSipNotify(const std::string& uri, const std::string& etag, const std::string& action) {
+    CLog::Print(LOG_INFO, "SendSipNotify: Processing Event Uri=%s ETag=%s Action=%s", uri.c_str(), etag.c_str(), action.c_str());
+
+    std::list<SubscriptionInfo> subList;
+    
+    // [USER REQ] Skip subscription requirement, target registered group members
+    /*
+    gclsSubscriptionManager.GetSubscribers(uri, subList);
+
+    if (subList.empty()) {
+        CLog::Print(LOG_INFO, "SendSipNotify: No subscribers for %s", uri.c_str());
+        return;
+    }
+    */
+
+    // Extract Group ID from URI (Handle tel: schema and + prefix)
+    std::string strGroupId;
+    size_t pos = uri.find( ":" );
+    if ( pos != std::string::npos ) {
+        strGroupId = uri.substr( pos + 1 );
+    } else {
+        strGroupId = uri;
+    }
+    if ( !strGroupId.empty() && strGroupId[0] == '+' ) {
+        strGroupId = strGroupId.substr( 1 );
+    }
+
+    CspPttGroup clsGroup;
+    if (gclsGroupMap.Select(strGroupId.c_str(), clsGroup)) {
+        CLog::Print(LOG_INFO, "SendSipNotify: Found Group %s, checking %d members", strGroupId.c_str(), (int)clsGroup._pusers.size());
+        for (const auto& pUser : clsGroup._pusers) {
+            CUserInfo clsUserInfo;
+            if (gclsUserMap.Select(pUser->_id.c_str(), clsUserInfo)) {
+                SubscriptionInfo info;
+                char szContact[256];
+                snprintf(szContact, sizeof(szContact), "sip:%s@%s:%d", pUser->_id.c_str(), clsUserInfo.m_strIp.c_str(), clsUserInfo.m_iPort);
+                
+                info.strSubscriberUri = szContact;
+                info.strCallId = "forced-notify-" + std::to_string(time(NULL)) + "-" + pUser->_id;
+                info.iExpires = 3600;
+                
+                subList.push_back(info);
+                CLog::Print(LOG_INFO, "SendSipNotify: Target member %s added for NOTIFY", pUser->_id.c_str());
+            } else {
+                CLog::Print(LOG_DEBUG, "SendSipNotify: Member %s is not registered", pUser->_id.c_str());
+            }
+        }
+    } else {
+        CLog::Print(LOG_INFO, "SendSipNotify: Group %s NOT found in GroupMap", strGroupId.c_str());
+    }
+
+    if (subList.empty()) {
+        USER_ID_LIST clsRegList;
+        gclsUserMap.GetRegisteredUsers( clsRegList );
+        std::string strRegUsers;
+        for ( auto const &strId : clsRegList ) {
+            if ( !strRegUsers.empty() ) strRegUsers += ", ";
+            strRegUsers += strId;
+        }
+        CLog::Print(LOG_INFO, "SendSipNotify: No registered members found for group %s. Total RegUsers[%s]", 
+                    strGroupId.c_str(), strRegUsers.c_str());
+        return;
+    }
+
+    for (const auto& sub : subList) {
+        CLog::Print(LOG_INFO, "SendSipNotify: Sending to %s", sub.strSubscriberUri.c_str());
+        
+        CSipMessage *pMsg = new CSipMessage();
+        pMsg->m_strSipMethod = "NOTIFY";
+        pMsg->m_clsReqUri.Parse( sub.strSubscriberUri.c_str(), sub.strSubscriberUri.length() );
+        pMsg->m_strSipVersion = "SIP/2.0";
+
+        // Set Headers (Standardize using structures)
+        pMsg->m_clsFrom.m_clsUri.Set("sip", "csc", "mcptt.com");
+        pMsg->m_clsFrom.InsertParam("tag", "serverTag");
+
+        pMsg->m_clsTo.m_clsUri.Parse( sub.strSubscriberUri.c_str(), sub.strSubscriberUri.length() );
+        if (!sub.strFromTag.empty()) {
+             pMsg->m_clsTo.InsertParam("tag", sub.strFromTag.c_str());
+        }
+        
+        pMsg->m_clsCallId.Parse( sub.strCallId.c_str(), sub.strCallId.length() );
+        pMsg->m_clsCSeq.Set( 1, "NOTIFY" );
+
+        pMsg->AddHeader("Event", "xcap-diff");
+        pMsg->AddHeader("Subscription-State", ( "active;expires=" + std::to_string(sub.iExpires) ).c_str());
+        pMsg->AddHeader("Content-Type", "application/xcap-diff+xml");
+
+        // Body
+        std::string strBody = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+        strBody += "<xcap-diff xmlns=\"urn:ietf:params:xml:ns:xcap-diff\" xcap-root=\"http://csc.mcptt.com/\">\n";
+        strBody += " <document-new-etag>" + etag + "</document-new-etag>\n";
+        strBody += "</xcap-diff>";
+
+        pMsg->m_strBody = strBody;
+        pMsg->m_iContentLength = strBody.length();
+
+        // Ensure raw packet is generated so stack can log it correctly
+        if (pMsg->MakePacket() == false) {
+            CLog::Print(LOG_ERROR, "SendSipNotify: MakePacket failed for %s", sub.strSubscriberUri.c_str());
+            delete pMsg;
+            continue;
+        }
+
+        CLog::Print(LOG_INFO, "SendSipNotify: Sending NOTIFY to %s", sub.strSubscriberUri.c_str());
+        
+        // Send (Stack will log UdpSend now because m_strPacket is filled)
+        gclsUserAgent.m_clsSipStack.SendSipMessage(pMsg);
+    }
+}
+
 /**
  * @ingroup CspServer
  * @brief C++ SIP stack 을 이용한 한국형 IP-PBX

@@ -15,7 +15,7 @@ cfg_dir="$root_dir/config"
 
 program="csp"
 program_list="$program"
-program_arg="$cfg_dir/csp.xml"
+program_arg="$cfg_dir/csp.json"
 program_name="csp"
 logfile="$log_dir/cspdog.log"
 
@@ -48,11 +48,13 @@ start_program_input(){
 
 start() {
     if [ -n "$(getpids $program)" ]; then
-        echo "$program_name: already running"
-    else
-        echo "$program_name: Starting..."
-        start_program_input "$program_name"
+        echo "$program_name: already running. Stopping first..."
+        stop
+        sleep 2
     fi
+    
+    echo "$program_name: Starting..."
+    start_program_input "$program_name"
 }
 
 stop() {
@@ -60,7 +62,15 @@ stop() {
     pids=$(getpids $program)
     if [ -n "$pids" ]; then
         kill $pids
-        echo "Sent kill signal to $pids"
+        echo "Sent kill signal to $pids. Waiting..."
+        sleep 2
+        
+        # Check if still running and force kill if needed
+        pids=$(getpids $program)
+        if [ -n "$pids" ]; then
+            echo "Processes still running: $pids. Killing with -9..."
+            kill -9 $pids
+        fi
     else
         echo "No process found to stop"
     fi
@@ -101,6 +111,7 @@ watchdog(){
 }
 
 watchdog_start(){
+    watchdog_stop
     nohup "$this_script" watchdog > /dev/null 2>&1 &
     echo "watchdog started."
 }
@@ -132,6 +143,7 @@ case "$1" in
         status
         ;;
     restart)
+        watchdog_stop
         stop
         sleep 1
         start

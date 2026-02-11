@@ -146,7 +146,7 @@ ECheckAuthResult CheckAuthorization( CSipCredential * pclsCredential, const char
  */
 bool CSipServer::RecvRequestRegister( int iThreadId, CSipMessage * pclsMessage )
 {
-	if( pclsMessage->m_iExpires != 0 && gclsSetup.m_iMinRegisterTimeout != 0 )
+	if( pclsMessage->m_iExpires > 0 && gclsSetup.m_iMinRegisterTimeout != 0 )
 	{
 		if( pclsMessage->m_iExpires < gclsSetup.m_iMinRegisterTimeout )
 		{
@@ -159,44 +159,62 @@ bool CSipServer::RecvRequestRegister( int iThreadId, CSipMessage * pclsMessage )
 		}
 	}
 
-    CspUser        clsUser;
+	// [UNREGISTER] Skip authentication for de-registration (expires=0)
 	if( pclsMessage->GetExpires() == 0 )
 	{
 		gclsUserMap.Delete( pclsMessage->m_clsFrom.m_clsUri.m_strUser.c_str() );
-
 		SendResponse( pclsMessage, SIP_OK );
+		return true;
+	}
+
+	// [AUTH] Check Authorization header for registration
+	SIP_CREDENTIAL_LIST::iterator	itCL = pclsMessage->m_clsAuthorizationList.begin();
+
+	if( itCL == pclsMessage->m_clsAuthorizationList.end() )
+	{
+		return SendUnAuthorizedResponse( pclsMessage );
+	}
+
+	CspUser	clsUser;
+
+	ECheckAuthResult eRes = CheckAuthorization( &(*itCL), pclsMessage->m_strSipMethod.c_str(), clsUser );
+	switch( eRes )
+	{
+	case E_AUTH_NONCE_NOT_FOUND:
+		SendUnAuthorizedResponse( pclsMessage );
+		return true;
+	case E_AUTH_ERROR:
+		SendResponse( pclsMessage, SIP_FORBIDDEN );
+		return true;
+	default:
+		break;
+	}
+
+	// [REGISTER] Process registration
+	CSipFrom clsContact;
+
+	if( gclsUserMap.Insert( pclsMessage, &clsContact, &clsUser ) )
+	{
+		CSipMessage * pclsResponse = pclsMessage->CreateResponseWithToTag( SIP_OK );
+		if( pclsResponse == NULL ) return false;
+
+		pclsResponse->m_clsContactList.push_back( clsContact );
+		pclsResponse->AddHeader( "Expires", 3600 );
+
+		gclsUserAgent.m_clsSipStack.SendSipMessage( pclsResponse );
+		
+		// [FIX for P2P Call] Update CspUserMap (JSON Map) registration time.
+		// Otherwise isAlive returns false (timeout) because time is 0.
+		gclsCspUserMap.registerUser( clsUser.m_strId, "" ); // Password already verified during Auth
+		
+		// [GROUP CALL AUTO JOIN]
+		if ( !clsUser.m_strOrganizationId.empty() ) {
+			gclsGroupCallService.InviteMember( clsUser.m_strId.c_str(), clsUser.m_strOrganizationId.c_str() );
+		}
 	}
 	else
 	{
-		CSipFrom clsContact;
-
-		if( gclsCspUserMap.Select( pclsMessage->m_clsFrom.m_clsUri.m_strUser.c_str(), clsUser ))
-		{ 
-			if( gclsUserMap.Insert( pclsMessage, &clsContact, &clsUser ) )
-			{
-				CSipMessage * pclsResponse = pclsMessage->CreateResponseWithToTag( SIP_OK );
-				if( pclsResponse == NULL ) return false;
-
-				pclsResponse->m_clsContactList.push_back( clsContact );
-				pclsResponse->AddHeader( "Expires", 3600 ); //by hak add.
-
-				gclsUserAgent.m_clsSipStack.SendSipMessage( pclsResponse );
-                
-                // [FIX for P2P Call] Update CspUserMap (JSON Map) registration time.
-                // Otherwise isAlive returns false (timeout) because time is 0.
-                gclsCspUserMap.registerUser( clsUser.m_strId, "" ); // Password already verified during Auth or trusted here
-				// [GROUP CALL AUTO JOIN]
-                /*
-				if ( !clsUser.m_strOrganizationId.empty() ) {
-					gclsGroupCallService.InviteMember( clsUser.m_strId.c_str(), clsUser.m_strOrganizationId.c_str() );
-				}
-                */
-			}
-		}
-		else
-		{
-			SendResponse( pclsMessage, SIP_BAD_REQUEST );
-		}
+		SendResponse( pclsMessage, SIP_BAD_REQUEST );
 	}
 
 	return true;

@@ -1,8 +1,8 @@
-# Install script for directory: /home/nex/work/cims/ext/googletest/src
+# Install script for directory: /home/agapeoom/cims/ext/googletest/src
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "/home/nex/work/cims/ext/googletest")
+  set(CMAKE_INSTALL_PREFIX "/home/agapeoom/cims/ext/googletest")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -44,7 +44,7 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("/home/nex/work/cims/ext/googletest/googlemock/cmake_install.cmake")
+  include("/home/agapeoom/cims/ext/googletest/googlemock/cmake_install.cmake")
 
 endif()
 
@@ -56,5 +56,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/nex/work/cims/ext/googletest/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/agapeoom/cims/ext/googletest/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

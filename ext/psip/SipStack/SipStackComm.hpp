@@ -18,9 +18,9 @@
 
 /**
  * @ingroup SipStack
- * @brief SIP stack ¿¡ SIP ¸Þ½ÃÁö°¡ Á¸ÀçÇÏÁö ¾ÊÀ¸¸é SIP stack ¿¡ SIP ¸Þ½ÃÁö¸¦ ÀúÀåÇÏ°í SIP ¸Þ½ÃÁö¸¦ ³×Æ®¿öÅ©·Î Àü¼ÛÇÑ´Ù.
- * @param pclsMessage SIP ¸Þ½ÃÁö ÀúÀå ±¸Á¶Ã¼
- * @returns ¼º°øÇÏ¸é true ¸¦ ¸®ÅÏÇÏ°í ½ÇÆÐÇÏ¸é false ¸¦ ¸®ÅÏÇÑ´Ù.
+ * @brief SIP stack ï¿½ï¿½ SIP ï¿½Þ½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ SIP stack ï¿½ï¿½ SIP ï¿½Þ½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ SIP ï¿½Þ½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ®ï¿½ï¿½Å©ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
+ * @param pclsMessage SIP ï¿½Þ½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ã¼
+ * @returns ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ true ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ false ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
  */
 bool CSipStack::SendSipMessage( CSipMessage * pclsMessage )
 {
@@ -93,11 +93,11 @@ bool CSipStack::SendSipMessage( CSipMessage * pclsMessage )
 
 /**
  * @ingroup SipStack
- * @brief ³×Æ®¿öÅ©¿¡¼­ ¼ö½ÅµÈ SIP ¸Þ½ÃÁö¸¦ SIP stack ¿¡ ÀúÀåÇÏ°í callback ¸Þ¼Òµå¸¦ È£ÃâÇÏ¿© ÀÀ¿ë¿¡ ¾Ë·Á ÁØ´Ù.
- *				º» ¸Þ¼Òµå¿¡¼­ true ¸¦ ¸®ÅÏÇÏ¸é ³»ºÎÀûÀ¸·Î CSipMessage ¸Þ¸ð¸®¸¦ °ü¸®ÇÏ°í ±×·¸Áö ¾ÊÀ¸¸é È£ÃâÇÑ ºÎºÐ¿¡¼­ CSipMessage ¸Þ¸ð¸®¸¦ »èÁ¦ÇØ ÁÖ¾î¾ß ÇÑ´Ù.
- * @param iThreadId		¾²·¹µå ¾ÆÀÌµð ( 0 ºÎÅÍ ¾²·¹µå °³¼ö )
- * @param pclsMessage SIP ¸Þ½ÃÁö ÀúÀå ±¸Á¶Ã¼
- * @returns SIP stack ¿¡ ÀúÀåÇÏ¸é true ¸¦ ¸®ÅÏÇÏ°í ±×·¸Áö ¾ÊÀ¸¸é false ¸¦ ¸®ÅÏÇÑ´Ù.
+ * @brief ï¿½ï¿½Æ®ï¿½ï¿½Å©ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Åµï¿½ SIP ï¿½Þ½ï¿½ï¿½ï¿½ï¿½ï¿½ SIP stack ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ callback ï¿½Þ¼Òµå¸¦ È£ï¿½ï¿½ï¿½Ï¿ï¿½ ï¿½ï¿½ï¿½ë¿¡ ï¿½Ë·ï¿½ ï¿½Ø´ï¿½.
+ *				ï¿½ï¿½ ï¿½Þ¼Òµå¿¡ï¿½ï¿½ true ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ CSipMessage ï¿½Þ¸ð¸®¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½×·ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ È£ï¿½ï¿½ï¿½ï¿½ ï¿½ÎºÐ¿ï¿½ï¿½ï¿½ CSipMessage ï¿½Þ¸ð¸®¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ö¾ï¿½ï¿½ ï¿½Ñ´ï¿½.
+ * @param iThreadId		ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ìµï¿½ ( 0 ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ )
+ * @param pclsMessage SIP ï¿½Þ½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ã¼
+ * @returns SIP stack ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ true ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½×·ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ false ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
  */
 bool CSipStack::RecvSipMessage( int iThreadId, CSipMessage * pclsMessage )
 {
@@ -130,7 +130,7 @@ bool CSipStack::RecvSipMessage( int iThreadId, CSipMessage * pclsMessage )
 		{
 			if( pclsMessage->IsMethod( SIP_METHOD_INVITE ) )
 			{
-				// INVITE ¸Þ½ÃÁö¿¡ ´ëÇÑ CANCEL ¸Þ½ÃÁö°¡ Á¸ÀçÇÏ¸é ÀÌ¸¦ SIP stack ¿¡¼­ »èÁ¦ÇÑ´Ù.
+				// INVITE ï¿½Þ½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ CANCEL ï¿½Þ½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ ï¿½Ì¸ï¿½ SIP stack ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
 				if( pclsMessage->m_iStatusCode >= 200 )
 				{
 					m_clsNICT.DeleteCancel( pclsMessage );
@@ -182,14 +182,14 @@ bool CSipStack::RecvSipMessage( int iThreadId, CSipMessage * pclsMessage )
 }
 
 /**
- * @brief ³×Æ®¿öÅ©¿¡¼­ ¼ö½ÅÇÑ SIP ¸Þ½ÃÁö¸¦ ÆÄ½ÌÇÑ ÈÄ, SIP stack ¿¡ ÀÔ·ÂÇÑ´Ù.
- * @param iThreadId		¾²·¹µå ¹øÈ£
- * @param pszBuf			³×Æ®¿öÅ©¿¡¼­ ¼ö½ÅµÈ SIP ¸Þ½ÃÁö
- * @param iBufLen			³×Æ®¿öÅ©¿¡¼­ ¼ö½ÅµÈ SIP ¸Þ½ÃÁöÀÇ ±æÀÌ
- * @param pszIp				IP ÁÖ¼Ò
- * @param iPort				Æ÷Æ® ¹øÈ£
+ * @brief ï¿½ï¿½Æ®ï¿½ï¿½Å©ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ SIP ï¿½Þ½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ä½ï¿½ï¿½ï¿½ ï¿½ï¿½, SIP stack ï¿½ï¿½ ï¿½Ô·ï¿½ï¿½Ñ´ï¿½.
+ * @param iThreadId		ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È£
+ * @param pszBuf			ï¿½ï¿½Æ®ï¿½ï¿½Å©ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Åµï¿½ SIP ï¿½Þ½ï¿½ï¿½ï¿½
+ * @param iBufLen			ï¿½ï¿½Æ®ï¿½ï¿½Å©ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Åµï¿½ SIP ï¿½Þ½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+ * @param pszIp				IP ï¿½Ö¼ï¿½
+ * @param iPort				ï¿½ï¿½Æ® ï¿½ï¿½È£
  * @param eTransport	Transport
- * @returns ¼º°øÇÏ¸é true ¸¦ ¸®ÅÏÇÏ°í ½ÇÆÐÇÏ¸é false ¸¦ ¸®ÅÏÇÑ´Ù.
+ * @returns ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ true ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ false ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
  */
 bool CSipStack::RecvSipMessage( int iThreadId, const char * pszBuf, int iBufLen, const char * pszIp, unsigned short iPort, ESipTransport eTransport )
 {
@@ -238,10 +238,10 @@ bool CSipStack::RecvSipMessage( int iThreadId, const char * pszBuf, int iBufLen,
 
 /**
  * @ingroup SipStack
- * @brief SIP ¸Þ½ÃÁö¸¦ ³×Æ®¿öÅ©·Î Àü¼ÛÇÑ´Ù.
- * @param pclsMessage		SIP ¸Þ½ÃÁö ÀúÀå ±¸Á¶Ã¼
- * @param bCheckMessage	SIP ¸Þ½ÃÁö¸¦ °Ë»çÇÏ¿©¼­ ÇÊ¼ö Çì´õ¸¦ Ãß°¡/¼öÁ¤ÇÏ´Â°¡?
- * @returns ¼º°øÇÏ¸é true ¸¦ ¸®ÅÏÇÏ°í ½ÇÆÐÇÏ¸é false ¸¦ ¸®ÅÏÇÑ´Ù.
+ * @brief SIP ï¿½Þ½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ®ï¿½ï¿½Å©ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
+ * @param pclsMessage		SIP ï¿½Þ½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ã¼
+ * @param bCheckMessage	SIP ï¿½Þ½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ë»ï¿½ï¿½Ï¿ï¿½ï¿½ï¿½ ï¿½Ê¼ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ß°ï¿½/ï¿½ï¿½ï¿½ï¿½ï¿½Ï´Â°ï¿½?
+ * @returns ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ true ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ false ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
  */
 bool CSipStack::Send( CSipMessage * pclsMessage, bool bCheckMessage )
 {
@@ -341,7 +341,7 @@ bool CSipStack::Send( CSipMessage * pclsMessage, bool bCheckMessage )
 		bRes = UdpSend( m_hUdpSocket, pclsMessage->m_strPacket.c_str(), (int)pclsMessage->m_strPacket.length(), pszIp, iPort );
 		m_clsUdpSendMutex.release();
 
-		CLog::Print( LOG_NETWORK, "UdpSend(%s:%d) [%s]", pszIp, iPort, pclsMessage->m_strPacket.c_str() );
+		CLog::Print( LOG_NETWORK, "UdpSend(%s:%d) \n[%s]", pszIp, iPort, pclsMessage->m_strPacket.c_str() );
 	}
 	else if( eTransport == E_SIP_TCP )
 	{
@@ -377,12 +377,12 @@ bool CSipStack::Send( CSipMessage * pclsMessage, bool bCheckMessage )
 
 /**
  * @ingroup SipStack
- * @brief SIP ¼¼¼ÇÀ¸·Î ¹®ÀÚ¿­À» Àü¼ÛÇÑ´Ù.
- * @param pszMessage Àü¼ÛÇÒ ¹®ÀÚ¿­
- * @param pszIp ¸ñÀûÁö IP ÁÖ¼Ò
- * @param iPort ¸ñÀûÁö Æ÷Æ® ¹øÈ£
- * @param eTransport ÇÁ·ÎÅäÄÝ
- * @returns ¼º°øÇÏ¸é true ¸¦ ¸®ÅÏÇÏ°í ½ÇÆÐÇÏ¸é false ¸¦ ¸®ÅÏÇÑ´Ù.
+ * @brief SIP ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ú¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
+ * @param pszMessage ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ú¿ï¿½
+ * @param pszIp ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ IP ï¿½Ö¼ï¿½
+ * @param iPort ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ® ï¿½ï¿½È£
+ * @param eTransport ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @returns ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ true ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ false ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
  */
 bool CSipStack::Send( const char * pszMessage, const char * pszIp, unsigned short iPort, ESipTransport eTransport )
 {
@@ -423,8 +423,8 @@ bool CSipStack::Send( const char * pszMessage, const char * pszIp, unsigned shor
 
 /**
  * @ingroup SipStack
- * @brief Àü¼ÛÇÒ SIP ¸Þ½ÃÁö¿¡¼­ ÇÊ¿äÇÑ Çì´õ°¡ Á¸ÀçÇÏÁö ¾ÊÀ» °æ¿ì default Çì´õ¸¦ ÀúÀåÇÑ´Ù.
- * @param pclsMessage Àü¼ÛÇÒ SIP ¸Þ½ÃÁö
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ SIP ï¿½Þ½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ default ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
+ * @param pclsMessage ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ SIP ï¿½Þ½ï¿½ï¿½ï¿½
  */
 void CSipStack::CheckSipMessage( CSipMessage * pclsMessage )
 {
