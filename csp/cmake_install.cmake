@@ -1,8 +1,8 @@
-# Install script for directory: /home/nex/work/cims/csp
+# Install script for directory: /home/agapeoom/cims/csp
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "/home/nex/work/cims/csp/dist")
+  set(CMAKE_INSTALL_PREFIX "/home/agapeoom/cims/csp/dist")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -49,13 +49,9 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
          FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/csp"
          RPATH "")
   endif()
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/bin" TYPE EXECUTABLE FILES "/home/nex/work/cims/bin/csp")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/bin" TYPE EXECUTABLE FILES "/home/agapeoom/cims/csp/csp")
   if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/csp" AND
      NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/csp")
-    file(RPATH_CHANGE
-         FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/csp"
-         OLD_RPATH "/home/nex/work/cims/pkg/l_ffmpeg/lib:/home/nex/work/cims/pkg/x264/lib:/home/nex/work/cims/ext/googletest/lib64:/home/nex/work/cims/pkg/amtrtp/lib:/home/nex/work/cims/ext/pdk-3.2.5:/home/nex/work/cims/pkg/opencore-amr/lib:/home/nex/work/cims/pkg/vo-amrwbenc-0.1.3/lib:/home/nex/work/cims/pkg/oneTBB/lib:/home/nex/work/cims/pkg/jitter:/home/nex/work/cims/ext/pasf/lib}:"
-         NEW_RPATH "")
     if(CMAKE_INSTALL_DO_STRIP)
       execute_process(COMMAND "/usr/bin/strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/csp")
     endif()
@@ -63,22 +59,24 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  include("/home/nex/work/cims/csp/CMakeFiles/csp.dir/install-cxx-module-bmi-noconfig.cmake" OPTIONAL)
+  include("/home/agapeoom/cims/csp/CMakeFiles/csp.dir/install-cxx-module-bmi-noconfig.cmake" OPTIONAL)
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/bin" TYPE PROGRAM FILES "/home/nex/work/cims/csp/csp.sh")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/bin" TYPE PROGRAM FILES "/home/agapeoom/cims/csp/csp.sh")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/config" TYPE FILE FILES "/home/nex/work/cims/csp/csp.xml")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/config" TYPE FILE FILES
+    "/home/agapeoom/cims/csp/csp.xml"
+    "/home/agapeoom/cims/csp/csp.json"
+    )
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/config" TYPE DIRECTORY FILES
-    "/home/nex/work/cims/csp/SipServerXml"
-    "/home/nex/work/cims/csp/UserXml"
-    "/home/nex/work/cims/csp/GroupXml"
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/." TYPE DIRECTORY FILES
+    "/home/agapeoom/cims/csp/User"
+    "/home/agapeoom/cims/csp/Group"
     )
 endif()
 
@@ -87,7 +85,7 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/cert" TYPE FILE FILES "/home/nex/work/cims/csp/csp.pem")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/cert" TYPE FILE FILES "/home/agapeoom/cims/csp/csp.pem")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
@@ -96,7 +94,17 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("/home/nex/work/cims/csp/psip_build/cmake_install.cmake")
+  include("/home/agapeoom/cims/csp/psip_build/cmake_install.cmake")
 
 endif()
 
+if(CMAKE_INSTALL_COMPONENT)
+  set(CMAKE_INSTALL_MANIFEST "install_manifest_${CMAKE_INSTALL_COMPONENT}.txt")
+else()
+  set(CMAKE_INSTALL_MANIFEST "install_manifest.txt")
+endif()
+
+string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
+       "${CMAKE_INSTALL_MANIFEST_FILES}")
+file(WRITE "/home/agapeoom/cims/csp/${CMAKE_INSTALL_MANIFEST}"
+     "${CMAKE_INSTALL_MANIFEST_CONTENT}")

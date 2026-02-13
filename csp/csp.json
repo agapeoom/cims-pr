@@ -1,7 +1,7 @@
 {
     "Setup": {
         "Sip": {
-            "LocalIp": "192.168.0.159",
+            "LocalIp": "192.168.0.73",
             "UdpPort": 5060,
             "UdpThreadCount": 1,
             "TcpPort": 25061,
@@ -17,9 +17,9 @@
         },
         "RtpRelay": {
             "UseRtpRelay": true,
-            "CmpIp": "192.168.0.159",
+            "CmpIp": "192.168.0.73",
             "CmpPort": 9000,
-            "LocalCmpIp": "192.168.0.159",
+            "LocalCmpIp": "192.168.0.73",
             "LocalCmpPort": 9001
         },
         "Log": {
@@ -33,9 +33,9 @@
             }
         },
         "DataFolder": {
-            "User": "../user",
+            "User": "../User",
             "SipServer": "../route",
-            "Group": "../group"
+            "Group": "../Group"
         },
         "Cdr": {
             "Folder": "../log/cdr"
@@ -44,7 +44,7 @@
             "Port": 16000,
             "ClientIpList": [
                 "127.0.0.1",
-                "192.168.0.159"
+                "192.168.0.73"
             ]
         },
         "Security": {

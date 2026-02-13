@@ -10,7 +10,7 @@
         "Level": "DEBUG"
     },
     "Data": {
-        "User": "/home/nex/work/cims/build/dist/csp/user",
-        "Group": "/home/nex/work/cims/build/dist/csp/group"
+        "User": "/home/agapeoom/cims/csp/dist/User",
+        "Group": "/home/agapeoom/cims/csp/dist/Group"
     }
 }

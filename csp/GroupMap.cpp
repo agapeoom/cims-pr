@@ -6,6 +6,7 @@
 #include "Directory.h"
 #include "Log.h"
 #include "CmpClient.h"
+#include "UserMap.h"
 #include <set>
 
 CGroupMap gclsGroupMap;
@@ -47,7 +48,19 @@ bool CGroupMap::ReadDir( const char *pszDirName ) {
         if ( clsGroup.load( strFileName.c_str() ) ) {
             Insert( clsGroup );
             setFoundIds.insert(clsGroup._id);
-            CLog::Print( LOG_INFO, "GroupMap Loaded Group(%s: %s)", clsGroup._id.c_str(), clsGroup._name.c_str() );
+
+            std::string strMembers, strRegMembers;
+            for ( const auto& pUser : clsGroup._pusers ) {
+                if ( !strMembers.empty() ) strMembers += ", ";
+                strMembers += pUser->_id;
+
+                if ( gclsUserMap.Select( pUser->_id.c_str() ) ) {
+                    if ( !strRegMembers.empty() ) strRegMembers += ", ";
+                    strRegMembers += pUser->_id;
+                }
+            }
+            CLog::Print( LOG_INFO, "GroupMap Loaded Group(%s: %s) Members[%s] RegMembers[%s]", clsGroup._id.c_str(),
+                         clsGroup._name.c_str(), strMembers.c_str(), strRegMembers.c_str() );
         }
     }
     
@@ -63,6 +76,7 @@ bool CGroupMap::ReadDir( const char *pszDirName ) {
     }
     m_clsMutex.release();
 
+    CLog::Print( LOG_INFO, "GroupMap: ReadDir finished. Total %d groups in map.", (int)m_clsMap.size() );
     return true;
 }
 

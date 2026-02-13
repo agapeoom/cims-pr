@@ -24,14 +24,14 @@
 #ifdef USE_TLS
 
 /**
- * @brief SIP ¸Þ½ÃÁö¸¦ TCP ¼¼¼Ç¿¡ ÀûÇÕÇÏ°Ô ¼öÁ¤ÇÑ ÈÄ, TCP ¼¼¼ÇÀ¸·Î Àü¼ÛÇÑ´Ù.
- * @param hSocket TCP ¼ÒÄÏ
- * @param psttSsl SSL ¼¼¼Ç
- * @param pszIp		¸ñÀûÁö IP ÁÖ¼Ò
- * @param iPort		¸ñÀûÁö Æ÷Æ® ¹øÈ£
- * @param pclsMessage SIP ¸Þ½ÃÁö
- * @param iLocalTlsPort ·ÎÄÃ TLS Æ÷Æ® ¹øÈ£. ·ÎÄÃ TLS listen port ¹øÈ£·Î Contact À» »ç¿ëÇÏ´Â °æ¿ì¿¡ ÀÔ·ÂÇÑ´Ù.
- * @returns ¼º°øÇÏ¸é true ¸¦ ¸®ÅÏÇÏ°í ½ÇÆÐÇÏ¸é false ¸¦ ¸®ÅÏÇÑ´Ù.
+ * @brief SIP ï¿½Þ½ï¿½ï¿½ï¿½ï¿½ï¿½ TCP ï¿½ï¿½ï¿½Ç¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½, TCP ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
+ * @param hSocket TCP ï¿½ï¿½ï¿½ï¿½
+ * @param psttSsl SSL ï¿½ï¿½ï¿½ï¿½
+ * @param pszIp		ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ IP ï¿½Ö¼ï¿½
+ * @param iPort		ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ® ï¿½ï¿½È£
+ * @param pclsMessage SIP ï¿½Þ½ï¿½ï¿½ï¿½
+ * @param iLocalTlsPort ï¿½ï¿½ï¿½ï¿½ TLS ï¿½ï¿½Æ® ï¿½ï¿½È£. ï¿½ï¿½ï¿½ï¿½ TLS listen port ï¿½ï¿½È£ï¿½ï¿½ Contact ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ì¿¡ ï¿½Ô·ï¿½ï¿½Ñ´ï¿½.
+ * @returns ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ true ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ false ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
  */
 bool SipTlsSend( Socket hSocket, SSL * psttSsl, const char * pszIp, int iPort, CSipMessage * pclsMessage, int iLocalTlsPort )
 {
@@ -43,7 +43,7 @@ bool SipTlsSend( Socket hSocket, SSL * psttSsl, const char * pszIp, int iPort, C
 	{
 		if( pclsMessage->IsRequest() )
 		{
-			// LG IP-PBX ¿¡ REGISTER ÇÑ ÈÄ, INVITE ¸¦ ¼ö½ÅÇÏ±â À§ÇØ¼­´Â listen port ¸¦ »ç¿ëÇØ¾ß µÇ¾î¼­ ¼öÁ¤ÇÔ.
+			// LG IP-PBX ï¿½ï¿½ REGISTER ï¿½ï¿½ ï¿½ï¿½, INVITE ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï±ï¿½ ï¿½ï¿½ï¿½Ø¼ï¿½ï¿½ï¿½ listen port ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ø¾ï¿½ ï¿½Ç¾î¼­ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
 			if( pclsMessage->SetTopViaTransPort( E_SIP_TLS, iLocalTlsPort ) )
 			{
 				pclsMessage->MakePacket();
@@ -79,12 +79,12 @@ bool SipTlsSend( Socket hSocket, SSL * psttSsl, const char * pszIp, int iPort, C
 
 	if( SSLSend( psttSsl, pclsMessage->m_strPacket.c_str(), iPacketLen ) == iPacketLen )
 	{
-		CLog::Print( LOG_NETWORK, "TlsSend(%s:%d) [%s]", pszIp, iPort, pclsMessage->m_strPacket.c_str() );
+		CLog::Print( LOG_NETWORK, "TlsSend(%s:%d) \n[%s]", pszIp, iPort, pclsMessage->m_strPacket.c_str() );
 		bRes = true;
 	}
 	else
 	{
-		CLog::Print( LOG_NETWORK, "TlsSend(%s:%d) [%s] error(%d)", pszIp, iPort, pclsMessage->m_strPacket.c_str(), GetError() );
+		CLog::Print( LOG_NETWORK, "TlsSend(%s:%d) \n[%s] error(%d)", pszIp, iPort, pclsMessage->m_strPacket.c_str(), GetError() );
 	}
 
 	return bRes;

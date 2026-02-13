@@ -102,6 +102,7 @@ public:
     bool unregisterUser(std::string strUserId);
     bool Select( const char *pszUserId, CspUser &clsXmlUser );
     void Insert( CspUser &clsXmlUser );
+    bool Load( const char *pszDirName );
     
 
 private:

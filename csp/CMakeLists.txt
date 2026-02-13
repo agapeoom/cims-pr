@@ -68,7 +68,7 @@ install(PROGRAMS csp.sh DESTINATION bin)
 
 # 2. Configuration (config/)
 install(FILES csp.xml csp.json DESTINATION config)
-install(DIRECTORY SipServerXml UserXml GroupXml DESTINATION config)
+install(DIRECTORY User Group DESTINATION .)
 install(DIRECTORY DESTINATION config/cdr)
 
 # 3. Certificates (cert/)

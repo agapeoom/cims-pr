@@ -6,7 +6,7 @@
 
 static bool SipMessageProcess( CSipStack * pclsSipStack, int iThreadId, const char * pszBuf, int iBufLen, const char * pszIp, unsigned short iPort )
 {
-	CLog::Print( LOG_NETWORK, "UdpRecv(%s:%d) [%s]", pszIp, iPort, pszBuf );
+	CLog::Print( LOG_NETWORK, "UdpRecv(%s:%d) \n[%s]", pszIp, iPort, pszBuf );
 
 	return pclsSipStack->RecvSipMessage( iThreadId, pszBuf, iBufLen, pszIp, iPort, E_SIP_UDP );
 }

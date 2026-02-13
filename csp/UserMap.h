@@ -84,6 +84,8 @@ public:
     void DeleteTimeout( int iTimeout );
     void SendOptions();
 
+    void GetRegisteredUsers( USER_ID_LIST &clsList );
+
     void GetString( CMonitorString &strBuf );
 
 private:

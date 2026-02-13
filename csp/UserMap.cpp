@@ -304,6 +304,19 @@ void CUserMap::SendOptions() {
  * @brief 자료구조 모니터링용 문자열을 생성한다.
  * @param strBuf 자료구조 모니터링용 문자열 변수
  */
+void CUserMap::GetRegisteredUsers( USER_ID_LIST &clsList ) {
+    USER_MAP::iterator itMap;
+    clsList.clear();
+
+    m_clsMutex.acquire();
+    for ( itMap = m_clsMap.begin(); itMap != m_clsMap.end(); ++itMap ) {
+        clsList.push_back( itMap->first );
+    }
+    m_clsMutex.release();
+}
+
+
+
 void CUserMap::GetString( CMonitorString &strBuf ) {
     USER_MAP::iterator itMap;
 
