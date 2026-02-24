@@ -46,6 +46,12 @@ def load_shared_data(config):
     # Config keys match csc.json structure
     user_path = config.get('Data', {}).get('User')
     group_path = config.get('Data', {}).get('Group')
+    db_config = config.get('Database')
+
+    # Initialize MariaDB Storage
+    if db_config:
+        storage.init_db(db_config)
+        logger.log_info("MariaDB Initialized for IDMS Storage")
     
     if user_path:
         # Load Users: ../user/XX/XX/XX/XX/XXXXXXXXXX.json
