@@ -30,22 +30,15 @@ if __name__ == '__main__':
     # Load Config
     import json
     def load_config():
-        # Assuming config is at ../../config/csc.json relative to src/app.py? 
-        # original csc_server.py used ../config/csc.json relative to bin/
-        # Here we are in csc/bin/csc_pihttp/src. 
-        # csc.json is likely at csc/config/csc.json which is ../../../config/csc.json
-        # BUT, the original csc_server.py was in csc/bin, and loaded ../config/csc.json.
-        # So csc.json is in csc/config/csc.json.
-        # Our app.py is in csc/bin/csc_pihttp/src.
-        # So we need ../../../config/csc.json
+        # Configuration file location: csc/bin/csc_pihttp/config/csc.json
+        # app.py is in csc/bin/csc_pihttp/src/
         try:
-            with open('../../../config/csc.json', 'r') as f:
+            with open('../config/csc.json', 'r') as f:
                 return json.load(f)
         except FileNotFoundError:
-            # Fallback for when running in different CWD or config missing
-            logger.log_error("Config file not found at ../../../config/csc.json. Trying ../config/csc.json")
+            logger.log_error("Config file not found at ../config/csc.json. Trying ../../../config/csc.json")
             try:
-                with open('../config/csc.json', 'r') as f:
+                with open('../../../config/csc.json', 'r') as f:
                     return json.load(f)
             except:
                 return {}

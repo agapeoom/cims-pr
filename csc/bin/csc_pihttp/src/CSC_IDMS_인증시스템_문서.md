@@ -532,38 +532,51 @@ csc_service.py (요청별 분기)
 
 ### 파일 구조
 
-```
-csc/bin/csc_pihttp/src/
-├── app.py                        # 서버 진입점 (라우팅, SSL 설정)
-├── csc_service.py                # 메인 서비스 로직 (요청별 핸들러)
-├── idms_storage.py               # 영속성 저장 모듈 (파일 락, 원자적 저장)
-├── cleanup_idms.py               # 데이터 정리 스크립트
-├── test_csc_http.py              # 통합 테스트 (토큰 캐싱 포함)
+```text
+csc/bin/csc_pihttp/
 ├── config/
-│   └── config.json               # 서버 설정 (사용자, 그룹 등)
-└── data/
-    ├── idms_auth_codes.json      # Authorization Code 저장
-    ├── idms_refresh_tokens.json  # Refresh Token 저장
-    ├── ptt_token_config.json     # 토큰 캐시(test_csc_http.py에서 사용)
-    └── .idms.lock                # 파일 락
-csc/bin/csc_pihttp/src/ (실행 경로)
-├── server.key                    # SSL 개인키 (필수)
-└── server.crt                    # SSL 인증서 (필수)
+│   └── csc.json                  # 서비스 설정 (사용자, DB 등)
+└── src/                          # (코드 실행 경로)
+    ├── app.py                    # 서버 진입점 (라우팅, SSL 설정)
+    ├── csc_service.py            # 메인 서비스 로직 (요청별 핸들러)
+    ├── idms_storage.py           # MariaDB 연동 저장소 모듈
+    ├── cleanup_idms.py           # 데이터 정리 스크립트
+    ├── test_csc_http.py          # 통합 테스트 (토큰 캐싱 포함)
+    ├── server.key                # SSL 개인키 (필수)
+    └── server.crt                # SSL 인증서 (필수)
 ```
 
 ---
 
 ## Config 파일 설명
 
-### 1. 서버 설정 (`config/config.json`)
+### 1. 서비스 설정 (`csc/bin/csc_pihttp/config/csc.json`)
+
+MariaDB 연결 정보를 포함하도록 설정 파일을 관리합니다.
+
+```json
+{
+    "Server": {
+        "Ip": "0.0.0.0",
+        "Port": 4420
+    },
+    "Database": {
+        "Host": "localhost",
+        "User": "agapeoom",
+        "Password": "!core0908",
+        "Db": "csc_idms"
+    }
+}
+```
 
 | 항목 | 설명 | 예시 값 | 비고 |
 |------|------|---------|------|
-| `server.host` | 서버 바인딩 주소 | `"0.0.0.0"` | 모든 인터페이스에서 수신 |
-| `server.port` | 서버 포트 | `4420` | HTTPS 포트 |
-| `server.ssl.enabled` | SSL/TLS 활성화 | `true` | 프로덕션 필수 |
-| `server.ssl.cert` | SSL 인증서 경로 | `"/path/to/cert.pem"` | PEM 형식 |
-| `server.ssl.key` | SSL 개인키 경로 | `"/path/to/key.pem"` | PEM 형식 |
+| `Server.Ip` | 서버 바인딩 주소 | `"0.0.0.0"` | 모든 인터페이스에서 수신 |
+| `Server.Port` | 서버 포트 | `4420` | HTTPS 포트 |
+| `Database.Host` | MariaDB 호스트 | `"localhost"` | |
+| `Database.User` | MariaDB 사용자명 | `"agapeoom"` | |
+| `Database.Password` | MariaDB 비밀번호 | `"내비밀번호"` | |
+| `Database.Db` | MariaDB 데이터베이스명 | `"csc_idms"` | |
 | `idms.issuer` | JWT 발급자 | `"idms.mcptt.com"` | ID Token의 iss 필드 |
 | `idms.secret_key` | JWT 서명 키 | `"your-secret-key"` | 256비트 이상 권장 |
 | `users[].id` | 사용자 ID | `"tel:+2001"` | URI 형식 |
@@ -572,7 +585,37 @@ csc/bin/csc_pihttp/src/ (실행 경로)
 
 ---
 
-### 2. TTL 설정 (`csc_service.py`)
+### 2. 저장소 구조 (MariaDB)
+
+기존 JSON 방식에서 MariaDB로 전환하여 무결성과 동시성을 보장합니다.
+
+#### [auth_codes] 테이블
+- `code` (PK): 인증 코드
+- `user_id`: 사용자 URI
+- `used`: 사용 여부 (0:미사용, 1:사용)
+- `expires_at`: 만료 시간
+- `client_id`: 클라이언트 ID
+- `redirect_uri`: 리다이렉트 URI
+- `scope`: 권한 범위
+- `state`: CSRF 방지 토큰
+- `issued_at`: 발급 시간
+- `code_challenge`: PKCE 챌린지
+- `code_challenge_method`: PKCE 방식
+
+#### [refresh_tokens] 테이블
+- `token_id` (PK): 리프레시 토큰 ID
+- `user_id`: 사용자 URI
+- `revoked`: 폐기 여부
+- `rotated_to`: 갱신된 새로운 토큰 ID
+- `client_id`: 발급받은 클라이언트
+- `scope`: 권한 범위
+- `issued_at`: 발급 시간
+- `expires_at`: 만료 시간
+
+> [!NOTE]
+> MariaDB의 트랜잭션 기능을 사용하므로 별도의 파일락(`.idms.lock`)이 필요하지 않습니다.
+
+### 3. TTL 설정 (`csc_service.py`)
 
 | 항목 | 설명 | 테스트 값 | 프로덕션 권장 값 | 비고 |
 |------|------|-----------|-----------------|------|
@@ -599,41 +642,7 @@ REFRESH_TOKEN_TTL = 60
 
 ### 3. 영속성 저장 파일
 
-#### 3-1. Authorization Code 저장 (`data/idms_auth_codes.json`)
-
-| 필드 | 설명 | 예시 값 | 비고 |
-|------|------|---------|------|
-| `version` | 파일 버전 | `1` | 호환성 관리 |
-| `codes.<uuid>` | Authorization Code (UUID) | `"7b0d2986-6823..."` | 키 값 |
-| `codes.<uuid>.user_id` | 사용자 ID | `"tel:+2001"` | 인증된 사용자 |
-| `codes.<uuid>.client_id` | 클라이언트 ID | `"MCPTT_UE"` | 요청한 클라이언트 |
-| `codes.<uuid>.redirect_uri` | 리다이렉트 URI | `"http://client/cb"` | 콜백 주소 |
-| `codes.<uuid>.scope` | 권한 범위 | `"openid 3gpp:mcptt:ptt_server"` | 공백으로 구분 |
-| `codes.<uuid>.state` | CSRF 방지 토큰 | `"mystate"` | 클라이언트가 생성 |
-| `codes.<uuid>.issued_at` | 발급 시간 | `1770705465` | Unix timestamp |
-| `codes.<uuid>.expires_at` | 만료 시간 | `1770705475` | Unix timestamp |
-| `codes.<uuid>.code_challenge` | PKCE 챌린지 | `"oEtOOSr02_j5..."` | Base64URL 인코딩 |
-| `codes.<uuid>.code_challenge_method` | PKCE 방식 | `"S256"` | SHA256만 지원 |
-
----
-
-#### 3-2. Refresh Token 저장 (`data/idms_refresh_tokens.json`)
-
-| 필드 | 설명 | 예시 값 | 비고 |
-|------|------|---------|------|
-| `version` | 파일 버전 | `1` | 호환성 관리 |
-| `tokens.<uuid>` | Refresh Token (UUID) | `"76648ec2-6cb0..."` | 키 값 |
-| `tokens.<uuid>.user_id` | 사용자 ID | `"tel:+2001"` | 토큰 소유자 |
-| `tokens.<uuid>.client_id` | 클라이언트 ID | `"MCPTT_UE"` | 발급받은 클라이언트 |
-| `tokens.<uuid>.scope` | 권한 범위 | `"openid 3gpp:mcptt:ptt_server"` | 공백으로 구분 |
-| `tokens.<uuid>.issued_at` | 발급 시간 | `1770705500` | Unix timestamp |
-| `tokens.<uuid>.expires_at` | 만료 시간 | `1770705560` | Unix timestamp |
-| `tokens.<uuid>.revoked` | 무효화 여부 | `false` | Rotation 시 true |
-| `tokens.<uuid>.rotated_to` | 새 토큰 ID | `null` 또는 UUID | Rotation 추적용 |
-
----
-
-#### 3-3. 토큰 캐시 (`data/ptt_token_config.json`)
+#### 3-1. 토큰 캐시 (`data/ptt_token_config.json`)
 
 | 필드 | 설명 | 예시 값 | 비고 |
 |------|------|---------|------|
@@ -652,7 +661,7 @@ REFRESH_TOKEN_TTL = 60
 
 ---
 
-#### 3-4. 그룹 정보 저장 (`csp/dist/Group/`)
+#### 3-2. 그룹 정보 저장 (`csp/dist/Group/`)
 
 **위치**: `/home/agapeoom/cims/csp/dist/Group/{group_id}.json`
 **용도**: CSC와 CSP 간 그룹 정보 공유 (CSC: Write, CSP: Read)
@@ -686,16 +695,6 @@ REFRESH_TOKEN_TTL = 60
     ]
 }
 ```
-
----
-
-### 4. 파일 락 (`.idms.lock`)
-
-| 항목 | 설명 | 비고 |
-|------|------|------|
-| **목적** | 동시 접근 시 데이터 무결성 보장 | fcntl.LOCK_EX 사용 |
-| **위치** | `data/.idms.lock` | 자동 생성 |
-| **동작** | 파일 읽기/쓰기 전 락 획득, 완료 후 해제 | 블로킹 방식 |
 
 ---
 
@@ -1176,23 +1175,7 @@ Content-Type: application/json
 
 ---
 
-### 4. 파일 락
-
-**목적**: 동시 접근 시 데이터 무결성 보장
-
-**구현** (`idms_storage.py`):
-```python
-import fcntl
-
-with open(LOCK_FILE, 'w') as lock_file:
-    fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
-    # 파일 읽기/쓰기
-    fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
-```
-
----
-
-### 5. HTTPS 필수
+### 4. HTTPS 필수
 
 **설정**:
 - TLS 1.2 이상
@@ -1359,8 +1342,10 @@ grep ERROR /home/agapeoom/cims/csc/dist/log/$(date +%Y%m%d)_1.txt
 | 버전 | 날짜 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
 | 1.0 | 2026-02-10 | 남광효 | 초안 작성 |
-| 1.1 | 2026-02-11 | 남광효 | 만료 시나리오 명확화, HTTPS 설정 및 인증서 생성 추가 |
+| 1.1 | 2026-02-11 | 남광효 | HTTPS 설정 및 인증서 생성 가이드 추가 |
+| 1.2 | 2026-02-24 | 남광효 | 데이터 저장소 MariaDB 마이그레이션 (JSON 제거) |
 
 ---
 
-**최종 업데이트**: 2026-02-11
+**최종 업데이트**: 2026-02-24
+```

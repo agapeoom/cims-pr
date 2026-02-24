@@ -1,0 +1,22 @@
+{
+    "Server": {
+        "Ip": "0.0.0.0",
+        "Port": 4420,
+        "CertFile": "../cert/cert.pem",
+        "KeyFile": "../cert/key.pem"
+    },
+    "Log": {
+        "File": "../log/csc.log",
+        "Level": "DEBUG"
+    },
+    "Data": {
+        "User": "/home/agapeoom/cims/csp/dist/User",
+        "Group": "/home/agapeoom/cims/csp/dist/Group"
+    },
+    "Database": {
+        "Host": "localhost",
+        "User": "agapeoom",
+        "Password": "!core0908",
+        "Db": "csc_idms"
+    }
+}
